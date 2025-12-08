@@ -1,11 +1,17 @@
-import React from "react";
+import { ThemeLanguageProvider } from "./contexts/ThemeLanguageContext";
+import ThemeLanguageControls from "./components/ThemeLanguageControls";
 import VideoGeneratorForm from "./components/VideoGeneratorForm";
+import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   return (
-    <div className="min-h-screen bg-background font-sans antialiased">
-      <VideoGeneratorForm />
-    </div>
+    <ThemeLanguageProvider>
+      <div className="min-h-screen bg-background font-sans antialiased text-foreground transition-colors duration-300">
+        <ThemeLanguageControls />
+        <VideoGeneratorForm />
+        <Toaster />
+      </div>
+    </ThemeLanguageProvider>
   );
 }
 

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Loader2, Video, Download, Sparkles, AlertCircle } from "lucide-react";
-import { AudioLines } from "lucide-react";
+import { Loader2, Video, Download, Sparkles, AlertCircle, AudioLines } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -11,227 +11,347 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { generateVideo } from "../api/video";
+import { SURAHS, RECITERS } from "../lib/constants";
+import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
+import { videoGeneratorSchema } from "../lib/schemas";
+import BackgroundSelector from "./BackgroundSelector";
+import { Progress } from "@/components/ui/progress";
 
 const VideoGeneratorForm = () => {
+    const { t, dir, language } = useThemeLanguage();
     const [loading, setLoading] = useState(false);
     const [videoUrl, setVideoUrl] = useState(null);
-    const [error, setError] = useState(null);
+    const [progress, setProgress] = useState(0);
+    const [statusMessage, setStatusMessage] = useState("");
 
-    const [formData, setFormData] = useState({
-        surah: 108,
-        ayah_start: 1,
-        ayah_end: 1,
-        reciter_id: "ar.alafasy",
-        platform: "reel",
+    const form = useForm({
+        resolver: zodResolver(videoGeneratorSchema),
+        defaultValues: {
+            surah: "1",
+            ayah_start: 1,
+            ayah_end: 1,
+            reciter_id: "ar.alafasy",
+            platform: "reel",
+            resolution: "720",
+            background_url: "https://www.pexels.com/download/video/6527132/",
+        },
     });
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-    };
-
-    const handleSelectChange = (name, value) => {
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const onSubmit = async (data) => {
         setLoading(true);
-        setError(null);
         setVideoUrl(null);
+        setProgress(0);
+        setStatusMessage("Starting...");
+
+        // Generate Request ID
+        const requestId = crypto.randomUUID();
+
+        // Start SSE Subscriber
+        // Handle potential double /api/v1 if VITE_API_URL includes it
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const progressEndpoint = baseUrl.endsWith('/api/v1')
+            ? `${baseUrl}/progress/${requestId}`
+            : `${baseUrl}/api/v1/progress/${requestId}`;
+
+        const eventSource = new EventSource(progressEndpoint);
+
+        eventSource.onmessage = (event) => {
+            try {
+                const payload = JSON.parse(event.data);
+                if (payload.status === "complete") {
+                    setProgress(100);
+                    setStatusMessage(t('status_completed') || "Completed!");
+                    eventSource.close();
+                } else if (payload.percentage !== undefined) {
+                    setProgress(payload.percentage);
+                    if (payload.message) {
+                        // Translate the message key
+                        let displayMsg = t(payload.message) || payload.message;
+                        // Special handling for rendering to show percentage
+                        if (payload.message === 'status_rendering') {
+                            displayMsg = `${displayMsg} ${payload.percentage}%`;
+                        }
+                        setStatusMessage(displayMsg);
+                    }
+                } else if (payload.error) {
+                    toast.error(payload.error);
+                    eventSource.close();
+                }
+            } catch (e) {
+                console.error("Error parsing progress:", e);
+            }
+        };
+
+        eventSource.onerror = () => {
+            // connection errors are common when closing, ignore
+        };
 
         try {
-            if (!formData.surah || !formData.ayah_start || !formData.ayah_end) {
-                throw new Error("Please fill in all required fields.");
-            }
-
             const videoBlob = await generateVideo({
-                ...formData,
-                surah: parseInt(formData.surah),
-                ayah_start: parseInt(formData.ayah_start),
-                ayah_end: parseInt(formData.ayah_end),
+                ...data,
+                surah: parseInt(data.surah),
+                ayah_start: parseInt(data.ayah_start),
+                ayah_end: parseInt(data.ayah_end),
+                resolution: parseInt(data.resolution),
+                request_id: requestId
             });
 
             const url = URL.createObjectURL(videoBlob);
             setVideoUrl(url);
+            toast.success("Video generated successfully!");
         } catch (err) {
-            setError(err.message);
+            toast.error(err.message || "Something went wrong");
         } finally {
             setLoading(false);
+            eventSource.close();
         }
     };
 
     return (
-        <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 font-sans selection:bg-emerald-500/30">
+        <div className="relative min-h-screen pt-8 w-full overflow-hidden bg-background font-sans selection:bg-primary/30" dir={dir}>
             {/* Animated Background Gradients */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 blur-[100px] animate-pulse"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-teal-500/10 blur-[100px] animate-pulse delay-1000"></div>
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[100px] animate-pulse"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/10 blur-[100px] animate-pulse delay-1000"></div>
             </div>
 
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
-                <div className="w-full max-w-4xl grid lg:grid-cols-2 gap-8 items-start">
+                <div className="w-full max-w-2xl flex flex-col gap-8">
 
                     {/* Left: Input Form */}
-                    <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-xl shadow-2xl">
+                    <Card className="border-border bg-card/50 backdrop-blur-xl shadow-2xl">
                         <CardHeader>
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                                    <Sparkles className="w-5 h-5" />
-                                </div>
-                                <span className="text-sm font-medium text-emerald-500 tracking-wider uppercase">AI Generator</span>
-                            </div>
-                            <CardTitle className="text-3xl font-bold text-white">
-                                Create Quran Reels
+                            <CardTitle className="text-3xl font-bold text-foreground">
+                                {t('appTitle')}
                             </CardTitle>
-                            <CardDescription className="text-slate-400 text-base">
-                                Transform Quran verses into engaging short videos with beautiful backgrounds and recitations.
+                            <CardDescription className="text-muted-foreground text-base">
+                                {t('appDescription')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="surah" className="text-slate-200">Surah Number</Label>
-                                        <Input
-                                            id="surah"
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+
+                                        <FormField
+                                            control={form.control}
                                             name="surah"
-                                            type="number"
-                                            min="1"
-                                            max="114"
-                                            value={formData.surah}
-                                            onChange={handleInputChange}
-                                            required
-                                            className="bg-slate-950/50 border-slate-800 focus:border-emerald-500 focus:ring-emerald-500/20 text-white placeholder:text-slate-600"
-                                            placeholder="e.g. 108"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel className="text-foreground">{t('surah')}</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
+                                                                <SelectValue placeholder={t('selectSurah')} />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="bg-popover border-border text-popover-foreground max-h-[300px]">
+                                                            {SURAHS.map((surah) => (
+                                                                <SelectItem key={surah.number} value={String(surah.number)}>
+                                                                    {surah.number}. {language === 'ar' ? surah.arabicName : surah.name} {language !== 'ar' && `- ${surah.englishName}`}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
                                         />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="platform" className="text-slate-200">Format</Label>
-                                        <Select
+
+                                        <FormField
+                                            control={form.control}
                                             name="platform"
-                                            value={formData.platform}
-                                            onValueChange={(val) => handleSelectChange("platform", val)}
-                                        >
-                                            <SelectTrigger className="bg-slate-950/50 border-slate-800 focus:border-emerald-500 focus:ring-emerald-500/20 text-white">
-                                                <SelectValue placeholder="Select platform" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                                <SelectItem value="reel">📱 TikTok / Reels (9:16)</SelectItem>
-                                                <SelectItem value="youtube">📺 YouTube (16:9)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel className="text-foreground">{t('platform')}</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
+                                                                <SelectValue placeholder={t('selectPlatform')} />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                            <SelectItem value="reel">{t('platformReel')}</SelectItem>
+                                                            <SelectItem value="youtube">{t('platformYoutube')}</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="ayah_start" className="text-slate-200">Start Ayah</Label>
-                                        <Input
-                                            id="ayah_start"
+                                        <div className="col-span-2">
+                                            <FormField
+                                                control={form.control}
+                                                name="resolution"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-2">
+                                                        <FormLabel className="text-foreground">{t('resolution')}</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
+                                                                    <SelectValue placeholder={t('selectResolution')} />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                <SelectItem value="360">{t('res360')}</SelectItem>
+                                                                <SelectItem value="480">{t('res480')}</SelectItem>
+                                                                <SelectItem value="720">{t('res720')}</SelectItem>
+                                                                <SelectItem value="1080">{t('res1080')}</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
                                             name="ayah_start"
-                                            type="number"
-                                            min="1"
-                                            value={formData.ayah_start}
-                                            onChange={handleInputChange}
-                                            required
-                                            className="bg-slate-950/50 border-slate-800 focus:border-emerald-500 focus:ring-emerald-500/20 text-white"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel className="text-foreground">{t('startAyah')}</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            {...field}
+                                                            className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground"
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
                                         />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="ayah_end" className="text-slate-200">End Ayah</Label>
-                                        <Input
-                                            id="ayah_end"
+
+                                        <FormField
+                                            control={form.control}
                                             name="ayah_end"
-                                            type="number"
-                                            min="1"
-                                            value={formData.ayah_end}
-                                            onChange={handleInputChange}
-                                            required
-                                            className="bg-slate-950/50 border-slate-800 focus:border-emerald-500 focus:ring-emerald-500/20 text-white"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel className="text-foreground">{t('endAyah')}</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            {...field}
+                                                            className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground"
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
                                         />
                                     </div>
-                                </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="reciter" className="text-slate-200 flex items-center gap-2">
-                                        <AudioLines className="w-4 h-4" /> Reciter
-                                    </Label>
-                                    <Select
+                                    {/* Background Selector */}
+                                    <FormField
+                                        control={form.control}
+                                        name="background_url"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel className="text-foreground">{t('selectBackground') || "Select Background"}</FormLabel>
+                                                <FormControl>
+                                                    <BackgroundSelector
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        platform={form.watch('platform')}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
                                         name="reciter_id"
-                                        value={formData.reciter_id}
-                                        onValueChange={(val) => handleSelectChange("reciter_id", val)}
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel className="text-foreground flex items-center gap-2">
+                                                    <AudioLines className="w-4 h-4" /> {t('reciter')}
+                                                </FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
+                                                            <SelectValue placeholder={t('selectReciter')} />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent className="bg-popover border-border text-popover-foreground max-h-[300px]">
+                                                        {RECITERS.map((reciter) => (
+                                                            <SelectItem key={reciter.id} value={reciter.id}>
+                                                                {language === 'ar' && reciter.arabicName ? reciter.arabicName : reciter.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-lg shadow-primary/20 transition-all duration-300 transform hover:scale-[1.02]"
+                                        disabled={loading}
                                     >
-                                        <SelectTrigger className="bg-slate-950/50 border-slate-800 focus:border-emerald-500 focus:ring-emerald-500/20 text-white">
-                                            <SelectValue placeholder="Select reciter" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                            <SelectItem value="ar.alafasy">Mishary Rashid Alafasy</SelectItem>
-                                            <SelectItem value="ar.abdulbasitmurattal">Abdul Basit (Murattal)</SelectItem>
-                                            <SelectItem value="ar.husary">Al-Husary</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {error && (
-                                    <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-500 animate-in fade-in slide-in-from-top-2">
-                                        <AlertCircle className="h-4 w-4" />
-                                        <AlertTitle>Error</AlertTitle>
-                                        <AlertDescription>{error}</AlertDescription>
-                                    </Alert>
-                                )}
-
-                                <Button
-                                    type="submit"
-                                    className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-lg shadow-lg shadow-emerald-500/20 transition-all duration-300 transform hover:scale-[1.02]"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                            Generating Your Reel...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Video className="mr-2 h-5 w-5" />
-                                            Generate Video
-                                        </>
-                                    )}
-                                </Button>
-                            </form>
+                                        {loading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                {t('generating')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Video className="mr-2 h-5 w-5" />
+                                                {t('generateBtn')}
+                                            </>
+                                        )}
+                                    </Button>
+                                </form>
+                            </Form>
                         </CardContent>
                     </Card>
 
                     {/* Right: Result / Preview */}
                     <div className="flex flex-col gap-6">
-                        <Card className="h-full min-h-[500px] border-slate-800 bg-slate-900/50 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group">
+                        <Card className="h-full min-h-[500px] border-border bg-card/50 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group">
                             {/* Placeholder Pattern */}
                             {!videoUrl && !loading && (
-                                <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                                <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>
                             )}
 
                             {loading ? (
-                                <div className="flex flex-col items-center gap-4 z-10 text-slate-400">
-                                    <div className="relative">
-                                        <div className="w-16 h-16 rounded-full border-4 border-slate-800 border-t-emerald-500 animate-spin"></div>
+                                <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground w-3/4 max-w-sm">
+                                    <div className="relative mb-4">
+                                        <div className="w-16 h-16 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <Sparkles className="w-6 h-6 text-emerald-500 animate-pulse" />
+                                            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
                                         </div>
                                     </div>
-                                    <p className="animate-pulse">Creating magic...</p>
+                                    <div className="w-full space-y-2 text-center">
+                                        <p className="font-medium text-foreground animate-pulse">{statusMessage || t('creatingMagic')}</p>
+                                        <Progress value={progress} className="w-full h-2" />
+                                        <p className="text-xs text-muted-foreground">{progress}%</p>
+                                    </div>
                                 </div>
                             ) : videoUrl ? (
                                 <div className="w-full h-full p-4 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
-                                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-slate-800 group-hover:border-emerald-500/30 transition-colors">
+                                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-border group-hover:border-primary/30 transition-colors">
                                         <video
                                             src={videoUrl}
                                             controls
@@ -240,35 +360,37 @@ const VideoGeneratorForm = () => {
                                     </div>
                                     <Button
                                         variant="outline"
-                                        className="w-full border-slate-700 hover:bg-slate-800 text-emerald-500 hover:text-emerald-400"
+                                        className="w-full border-input hover:bg-accent hover:text-accent-foreground text-primary"
                                         onClick={() => {
                                             const a = document.createElement("a");
                                             a.href = videoUrl;
-                                            a.download = `quran_reels_${formData.surah}_${formData.ayah_start}-${formData.ayah_end}.mp4`;
+                                            a.download = `quran_reels_${form.getValues('surah')}_${form.getValues('ayah_start')}-${form.getValues('ayah_end')}.mp4`;
                                             document.body.appendChild(a);
                                             a.click();
                                             document.body.removeChild(a);
                                         }}
                                     >
                                         <Download className="mr-2 h-4 w-4" />
-                                        Download MP4
+                                        {t('downloadBtn')}
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center gap-4 z-10 text-slate-500">
-                                    <div className="w-20 h-20 rounded-2xl bg-slate-800/50 flex items-center justify-center mb-2 rotate-3 group-hover:rotate-6 transition-transform duration-500">
-                                        <Video className="w-10 h-10 text-slate-600 group-hover:text-emerald-500 transition-colors" />
+                                <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground">
+                                    <div className="w-20 h-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-2 rotate-3 group-hover:rotate-6 transition-transform duration-500">
+                                        <Video className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
                                     </div>
                                     <div className="text-center">
-                                        <h3 className="text-lg font-medium text-slate-300">Preview Area</h3>
-                                        <p className="text-sm">Your generated video will appear here.</p>
+                                        <h3 className="text-lg font-medium text-foreground">{t('previewTitle')}</h3>
+                                        <p className="text-sm">{t('previewText')}</p>
                                     </div>
                                 </div>
                             )}
                         </Card>
                     </div>
                 </div>
+
             </div>
+
         </div>
     );
 };

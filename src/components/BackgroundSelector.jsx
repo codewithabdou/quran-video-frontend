@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
-import { createClient } from 'pexels';
+// import { createClient } from 'pexels'; // Removed to avoid browser require errors
 
 // Swiper imports
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -41,14 +41,19 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                 return;
             }
 
-            const client = createClient(apiKey);
-
             try {
-                // Fetch all videos concurrently
-                const promises = VIDEO_IDS.map(id => client.videos.show({ id }));
-                const results = await Promise.all(promises);
+                // Fetch all videos concurrently using native fetch
+                const promises = VIDEO_IDS.map(async (id) => {
+                    const response = await fetch(`https://api.pexels.com/videos/videos/${id}`, {
+                        headers: {
+                            Authorization: apiKey
+                        }
+                    });
+                    if (!response.ok) throw new Error(`Failed to fetch video ${id}`);
+                    return response.json();
+                });
 
-                // Pexels client returns the video object directly
+                const results = await Promise.all(promises);
                 setVideos(results);
             } catch (err) {
                 console.error("Failed to fetch videos:", err);

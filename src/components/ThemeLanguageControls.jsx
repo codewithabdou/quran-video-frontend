@@ -1,6 +1,7 @@
 import React from 'react';
-import { Moon, Sun, Globe } from 'lucide-react';
+import { Moon, Sun, Globe, Sparkles, Home } from 'lucide-react';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -11,6 +12,8 @@ import { Button } from "@/components/ui/button";
 
 const ThemeLanguageControls = () => {
     const { language, setLanguage, setTheme, t } = useThemeLanguage();
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const languages = [
         { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -20,6 +23,29 @@ const ThemeLanguageControls = () => {
 
     return (
         <div className="absolute top-4 right-4 z-50 flex gap-2">
+            {/* Route Navigation */}
+            {location.pathname === '/generate' ? (
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate('/')}
+                    className="bg-background/50 backdrop-blur border-border hover:bg-accent hover:text-accent-foreground transition-all"
+                    title="Back to Home"
+                >
+                    <Home className="h-[1.2rem] w-[1.2rem]" />
+                </Button>
+            ) : (
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate('/generate')}
+                    className="bg-background/50 backdrop-blur border-border hover:bg-purple-500/10 hover:text-purple-600 hover:border-purple-500/50 transition-all text-purple-500"
+                    title="Start Generator"
+                >
+                    <Sparkles className="h-[1.2rem] w-[1.2rem]" />
+                </Button>
+            )}
+
             {/* Language Selector */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>

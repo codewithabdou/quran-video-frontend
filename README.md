@@ -1,4 +1,4 @@
-# 📖 Quran Reels Generator
+# 📖 Quran Videos Generator
 
 ![Project Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -6,7 +6,7 @@
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Shadcn/UI](https://img.shields.io/badge/Shadcn%2FUI-000000?style=for-the-badge&logo=shadcnui&logoColor=white)
 
-A modern, automated web application for creating engaging Quran video reels. Built with **React** and **Shadcn UI**, this tool allows users to generate customized video content featuring Quranic recitations, beautiful backgrounds, and synchronized text.
+A modern, automated web application for creating engaging Quran video videoss. Built with **React** and **Shadcn UI**, this tool allows users to generate customized video content featuring Quranic recitations, beautiful backgrounds, and synchronized text.
 
 ## Getting Started
 
@@ -32,7 +32,8 @@ A modern, automated web application for creating engaging Quran video reels. Bui
     cp .env.example .env
     ```
     Open `.env` and configure your API keys:
-    - `VITE_API_URL`: Backend URL (default: `http://localhost:8000`)
+    - `VITE_API_URL`: Backend URL (default: `http://localhost:8000/api/v1`)
+    - `VITE_NODE_API_URL`: Backend URL (default: `http://localhost:5000`)
     - `VITE_PEXELS_API_KEY`: Get one from [Pexels](https://www.pexels.com/api/) (Required for background search).
 
 4.  **Start the development server**
@@ -44,9 +45,11 @@ A modern, automated web application for creating engaging Quran video reels. Bui
     Visit `http://localhost:5173` to view the application.
 
 ## Features
-- **Multi-Language Support**: English, French, and Arabic interfaces.
-- **Dark/Light Mode**: Fully responsive theme switching.
-- **Background Selector**: Search and select dynamic video backgrounds driven by Pexels.
+- **Format Flexibility**: Create vertical (9:16) videos for TikTok/Reels or horizontal (16:9) for YouTube.
+- **Social Sharing**: Share generated videos directly to WhatsApp, Instagram, and more with a single click.
+- **Dynamic Backgrounds**: Search and select dynamic video backgrounds driven by Pexels.
+- **Multi-Language Support**: Fully translated interface in English, French, and Arabic.
+- **Dark/Light Mode**: Beautifully designed UI with seamless theme web switching.
 - **Real-Time Progress**: Live visual feedback during video generation.
 
 ## Usage
@@ -56,7 +59,7 @@ A modern, automated web application for creating engaging Quran video reels. Bui
 3.  **Set Range**: Specify the starting and ending Ayah.
 4.  **Select Reciter**: Choose your preferred Qari.
 5.  **Generate**: Click "Generate Video" and wait for the magic! ✨
-6.  **Download**: Preview your video and download it directly.
+6.  **Share or Download**: Preview your video, then download it or share it directly to your social apps.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 export const translations = {
     en: {
-        appTitle: "Create Quran Reels",
+        appTitle: "Quran Video Generator",
         appDescription: "Transform Quran verses into engaging short videos with beautiful backgrounds and recitations.",
         surah: "Surah",
         selectSurah: "Select Surah",
@@ -35,7 +35,19 @@ export const translations = {
         status_processing_video: "Processing background video...",
         status_subtitles: "Generating subtitles...",
         status_rendering: "Video Rendering",
-        status_completed: "Complete!"
+        status_completed: "Complete!",
+        labs: "Labs",
+        experimentalSubtitle: "Experimental Node.js Backend Generator",
+        testBuild: "Test Build",
+        startExperimental: "Starting (Experimental)...",
+        videoGeneratedSuccess: "Video generated successfully!",
+        errorSomethingWentWrong: "Something went wrong",
+        welcomeTitle: "Create Beautiful Quran Videos",
+        welcomeDesc: "Generate stunning videos with synchronized audio and subtitles for TikTok, Reels, and YouTube in seconds.",
+        startNowBtn: "Start Generating",
+        featuresTitle: "Why Use Quran Video Generator?",
+        shareBtn: "Share Video",
+        shareNotSupported: "Sharing not supported on this device"
     },
     fr: {
         appTitle: "Créer des Reels Coraniques",
@@ -73,7 +85,19 @@ export const translations = {
         status_processing_video: "Traitement de la vidéo...",
         status_subtitles: "Génération des sous-titres...",
         status_rendering: "Rendu vidéo",
-        status_completed: "Terminé !"
+        status_completed: "Terminé !",
+        labs: "Labo",
+        experimentalSubtitle: "Générateur expérimental Node.js",
+        testBuild: "Version Test",
+        startExperimental: "Démarrage (Expérimental)...",
+        videoGeneratedSuccess: "Vidéo générée avec succès !",
+        errorSomethingWentWrong: "Quelque chose s'est mal passé",
+        welcomeTitle: "Créez de Magnifiques Vidéos Coraniques",
+        welcomeDesc: "Générez des vidéos époustouflantes avec audio et sous-titres synchronisés pour TikTok, Reels et YouTube en quelques secondes.",
+        startNowBtn: "Commencer Maintenant",
+        featuresTitle: "Pourquoi Utiliser le Générateur de Vidéos Coraniques ?",
+        shareBtn: "Partager la Vidéo",
+        shareNotSupported: "Partage non supporté sur cet appareil"
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -111,6 +135,18 @@ export const translations = {
         status_processing_video: "معالجة الفيديو...",
         status_subtitles: "إنشاء النصوص...",
         status_rendering: "جاري العرض (الرندرة)",
-        status_completed: "تم الانتهاء!"
+        status_completed: "تم الانتهاء!",
+        labs: "مختبر",
+        experimentalSubtitle: "مولد تجريبي (Node.js)",
+        testBuild: "نسخة تجريبية",
+        startExperimental: "جاري البدء (تجريبي)...",
+        videoGeneratedSuccess: "تم إنشاء الفيديو بنجاح!",
+        errorSomethingWentWrong: "حدث خطأ ما",
+        welcomeTitle: "أنشئ مقاطع فيديو قرآنية رائعة",
+        welcomeDesc: "قم بإنشاء مقاطع فيديو مذهلة مع صوت وترجمة متزامنة لـ TikTok و Reels و YouTube في ثوانٍ.",
+        startNowBtn: "ابدأ الآن",
+        featuresTitle: "لماذا تستخدم مولد الفيديو القرآني؟",
+        shareBtn: "مشاركة الفيديو",
+        shareNotSupported: "المشاركة غير مدعومة على هذا الجهاز"
     }
 };

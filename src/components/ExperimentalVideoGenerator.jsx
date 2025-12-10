@@ -28,6 +28,7 @@ import { videoGeneratorSchema } from "../lib/schemas";
 import BackgroundSelector from "./BackgroundSelector";
 import { Progress } from "@/components/ui/progress";
 import axios from "axios";
+import NotificationPermissionDialog from "./NotificationPermissionDialog";
 
 const ExperimentalVideoGenerator = () => {
     const { t, dir, language } = useThemeLanguage();
@@ -35,9 +36,56 @@ const ExperimentalVideoGenerator = () => {
     const [videoUrl, setVideoUrl] = useState(null);
     const [progress, setProgress] = useState(0);
     const [statusMessage, setStatusMessage] = useState("");
+    const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+    const [pendingFormData, setPendingFormData] = useState(null);
 
     // NODE BACKEND URL (Hardcoded or Env)
     const NODE_API_URL = import.meta.env.VITE_NODE_API_URL || "http://localhost:5000";
+    const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+    // Helper for VAPID key conversion
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/-/g, '+')
+            .replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    const subscribeToPush = async (requestId) => {
+        if (!VAPID_PUBLIC_KEY) return;
+        if (!('serviceWorker' in navigator)) return;
+
+        try {
+            const register = await navigator.serviceWorker.register('/sw.js');
+
+            // Wait for service worker to be ready
+            await navigator.serviceWorker.ready;
+
+            let subscription = await register.pushManager.getSubscription();
+
+            if (!subscription) {
+                subscription = await register.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+            }
+
+            // Send to backend
+            await axios.post(`${NODE_API_URL}/api/v1/subscribe`, {
+                requestId,
+                subscription
+            });
+            console.log("Subscribed to push notifications for", requestId);
+        } catch (e) {
+            console.error("Push subscription failed:", e);
+        }
+    };
 
     const form = useForm({
         resolver: zodResolver(videoGeneratorSchema),
@@ -48,11 +96,11 @@ const ExperimentalVideoGenerator = () => {
             reciter_id: "ar.alafasy",
             platform: "reel",
             resolution: "720",
-            background_url: "https://www.pexels.com/download/video/6527132/",
+            background_url: "default", // Will use backend fallback video
         },
     });
 
-    const onSubmit = async (data) => {
+    const startGeneration = async (data) => {
         setLoading(true);
         setVideoUrl(null);
         setProgress(0);
@@ -60,6 +108,10 @@ const ExperimentalVideoGenerator = () => {
 
         // Generate Request ID
         const requestId = crypto.randomUUID();
+
+        // Subscribe to notifications BEFORE starting generation
+        // This ensures the subscription is active when the backend finishes
+        subscribeToPush(requestId);
 
         // Start SSE Subscriber
         const progressEndpoint = `${NODE_API_URL}/api/v1/progress/${requestId}`;
@@ -111,6 +163,46 @@ const ExperimentalVideoGenerator = () => {
         } finally {
             setLoading(false);
             eventSource.close();
+        }
+    };
+
+    const onSubmit = (data) => {
+        if (!('Notification' in window)) {
+            startGeneration(data);
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            setPendingFormData(data);
+            setShowPermissionDialog(true);
+        } else {
+            startGeneration(data);
+        }
+    };
+
+    const handleEnableNotifications = async () => {
+        setShowPermissionDialog(false);
+        if ('Notification' in window) {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    toast.success(t('enableNotificationsTitle')); // Reusing title as simple success msg or could add strict key
+                }
+            } catch (e) {
+                console.error("Permission request failed", e);
+            }
+        }
+        if (pendingFormData) {
+            startGeneration(pendingFormData);
+            setPendingFormData(null);
+        }
+    };
+
+    const handleSkipNotifications = () => {
+        setShowPermissionDialog(false);
+        if (pendingFormData) {
+            startGeneration(pendingFormData);
+            setPendingFormData(null);
         }
     };
 
@@ -372,22 +464,26 @@ const ExperimentalVideoGenerator = () => {
                                             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                                             onClick={async () => {
                                                 try {
-                                                    const response = await fetch(videoUrl);
-                                                    const blob = await response.blob();
-                                                    const file = new File([blob], `quran_reels_${form.getValues('surah')}.mp4`, { type: 'video/mp4' });
-
-                                                    if (navigator.share && navigator.canShare({ files: [file] })) {
+                                                    // For large files, use URL sharing instead of file sharing
+                                                    if (navigator.share) {
+                                                        // Try sharing with URL (works better for large files)
                                                         await navigator.share({
-                                                            files: [file],
                                                             title: 'Quran Video',
-                                                            text: 'Check out this video generated with Quran Video Generator!'
+                                                            text: 'Check out this video generated with Quran Video Generator!',
+                                                            url: window.location.href
                                                         });
                                                     } else {
-                                                        toast.error(t('shareNotSupported'));
+                                                        // Fallback: copy download link to clipboard
+                                                        const downloadLink = videoUrl;
+                                                        await navigator.clipboard.writeText(downloadLink);
+                                                        toast.success('Download link copied to clipboard!');
                                                     }
                                                 } catch (err) {
-                                                    console.error("Sharing failed:", err);
-                                                    toast.error(t('errorSomethingWentWrong'));
+                                                    // If sharing fails or is cancelled, try file download
+                                                    if (err.name !== 'AbortError') {
+                                                        console.error("Sharing failed:", err);
+                                                        toast.error(t('shareNotSupported'));
+                                                    }
                                                 }
                                             }}
                                         >
@@ -413,6 +509,13 @@ const ExperimentalVideoGenerator = () => {
 
             </div>
 
+
+            <NotificationPermissionDialog
+                open={showPermissionDialog}
+                onOpenChange={setShowPermissionDialog}
+                onEnable={handleEnableNotifications}
+                onSkip={handleSkipNotifications}
+            />
         </div>
     );
 };

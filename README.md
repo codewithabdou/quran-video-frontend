@@ -32,9 +32,9 @@ A modern, automated web application for creating engaging Quran video videoss. B
     cp .env.example .env
     ```
     Open `.env` and configure your API keys:
-    - `VITE_API_URL`: Backend URL (default: `http://localhost:8000/api/v1`)
     - `VITE_NODE_API_URL`: Backend URL (default: `http://localhost:5000`)
-    - `VITE_PEXELS_API_KEY`: Get one from [Pexels](https://www.pexels.com/api/) (Required for background search).
+    - `VITE_PEXELS_API_KEY`: Get one from [Pexels](https://www.pexels.com/api/) (Required for client-side previews).
+    - `VITE_VAPID_PUBLIC_KEY`: Push notification key (must match backend).
 
 4.  **Start the development server**
     ```bash

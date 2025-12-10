@@ -19,9 +19,7 @@ export const videoGeneratorSchema = z.object({
     resolution: z.enum(["360", "480", "720", "1080"], {
         required_error: "Please select a resolution.",
     }),
-    background_url: z.string().url({
-        message: "Please select a valid background video.",
-    }).optional(),
+    background_url: z.string().optional().default("default"),
 }).refine((data) => data.ayah_end >= data.ayah_start, {
     message: "End Ayah must be greater than or equal to Start Ayah",
     path: ["ayah_end"],

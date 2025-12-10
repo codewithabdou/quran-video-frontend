@@ -47,10 +47,17 @@ export const translations = {
         startNowBtn: "Start Generating",
         featuresTitle: "Why Use Quran Video Generator?",
         shareBtn: "Share Video",
-        shareNotSupported: "Sharing not supported on this device"
+        shareNotSupported: "Sharing not supported on this device",
+        enableNotificationsTitle: "Enable Notifications",
+        enableNotificationsDesc: "Get notified when your video is ready, even if you close this tab.",
+        enable: "Enable",
+        notNow: "Not Now",
+        loading: "Loading...",
+        backgroundUnavailable: "Background selection unavailable",
+        backgroundUnavailableDesc: "Don't worry! A default background will be used automatically."
     },
     fr: {
-        appTitle: "Créer des Reels Coraniques",
+        appTitle: "Créer des Vidéos Coraniques",
         appDescription: "Transformez les versets du Coran en courtes vidéos engageantes avec de beaux arrière-plans.",
         surah: "Sourate",
         selectSurah: "Sélectionner la Sourate",
@@ -97,7 +104,14 @@ export const translations = {
         startNowBtn: "Commencer Maintenant",
         featuresTitle: "Pourquoi Utiliser le Générateur de Vidéos Coraniques ?",
         shareBtn: "Partager la Vidéo",
-        shareNotSupported: "Partage non supporté sur cet appareil"
+        shareNotSupported: "Partage non supporté sur cet appareil",
+        enableNotificationsTitle: "Activer les Notifications",
+        enableNotificationsDesc: "Soyez notifié quand votre vidéo est prête, même si vous fermez cet onglet.",
+        enable: "Activer",
+        notNow: "Pas Maintenant",
+        loading: "Chargement...",
+        backgroundUnavailable: "Sélection d'arrière-plan indisponible",
+        backgroundUnavailableDesc: "Ne vous inquiétez pas ! Un arrière-plan par défaut sera utilisé automatiquement."
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -147,6 +161,13 @@ export const translations = {
         startNowBtn: "ابدأ الآن",
         featuresTitle: "لماذا تستخدم مولد الفيديو القرآني؟",
         shareBtn: "مشاركة الفيديو",
-        shareNotSupported: "المشاركة غير مدعومة على هذا الجهاز"
+        shareNotSupported: "المشاركة غير مدعومة على هذا الجهاز",
+        enableNotificationsTitle: "تفعيل الإشعارات",
+        enableNotificationsDesc: "تلقي إشعار عند جاهزية الفيديو، حتى لو أغلقت علامة التبويب.",
+        enable: "تفعيل",
+        notNow: "ليس الآن",
+        loading: "جاري التحميل...",
+        backgroundUnavailable: "اختيار الخلفية غير متاح",
+        backgroundUnavailableDesc: "لا تقلق! سيتم استخدام خلفية افتراضية تلقائياً."
     }
 };

@@ -3,23 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
-// import { createClient } from 'pexels'; // Removed to avoid browser require errors
 
 // Swiper imports
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
-
-// Data from provided IDs
-const VIDEO_IDS = [
-    6527132,
-    4600287,
-    4778336,
-    5006168,
-    6889380,
-    11025478
-];
 
 const BackgroundSelector = ({ value, onChange, className, platform }) => {
     const { t } = useThemeLanguage();
@@ -34,30 +23,30 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
             if (hasFetched.current) return;
             hasFetched.current = true;
 
-            const apiKey = import.meta.env.VITE_PEXELS_API_KEY;
-            if (!apiKey) {
-                setError("Missing API Key");
-                setLoading(false);
-                return;
-            }
+            const API_URL = import.meta.env.VITE_NODE_API_URL || 'http://localhost:5000';
 
             try {
-                // Fetch all videos concurrently using native fetch
-                const promises = VIDEO_IDS.map(async (id) => {
-                    const response = await fetch(`https://api.pexels.com/videos/videos/${id}`, {
-                        headers: {
-                            Authorization: apiKey
-                        }
-                    });
-                    if (!response.ok) throw new Error(`Failed to fetch video ${id}`);
-                    return response.json();
-                });
+                // Fetch from backend API
+                const response = await fetch(`${API_URL}/api/v1/backgrounds`);
 
-                const results = await Promise.all(promises);
-                setVideos(results);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch backgrounds: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.videos && data.videos.length > 0) {
+                    setVideos(data.videos);
+                } else {
+                    // Show friendly message instead of error
+                    setError(null);
+                    setVideos([]);
+                }
             } catch (err) {
                 console.error("Failed to fetch videos:", err);
-                setError("Failed to load videos");
+                // Don't show error, just use empty state
+                setError(null);
+                setVideos([]);
             } finally {
                 setLoading(false);
             }
@@ -66,7 +55,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
         fetchVideos();
     }, []);
 
-    // Helper to find the best quality video link for backend processing
+    // Helper to get download URL
     const getBestVideoLink = (videoData) => {
         return `https://www.pexels.com/download/video/${videoData.id}/`;
     };
@@ -80,11 +69,17 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
         );
     }
 
-    if (error) {
+    // If no videos loaded, show info message (not an error)
+    if (videos.length === 0) {
         return (
-            <div className="flex items-center justify-center p-8 bg-destructive/10 rounded-xl border border-destructive/20 text-destructive">
-                <AlertCircle className="w-5 h-5 mr-2" />
-                <span className="text-sm font-medium">{error}</span>
+            <div className="flex flex-col items-center justify-center p-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-2">
+                    <AlertCircle className="w-5 h-5" />
+                    <span className="text-sm font-medium">{t('backgroundUnavailable')}</span>
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-500 text-center">
+                    {t('backgroundUnavailableDesc')}
+                </p>
             </div>
         );
     }

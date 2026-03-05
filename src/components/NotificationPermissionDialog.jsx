@@ -20,7 +20,7 @@ const NotificationPermissionDialog = ({ open, onOpenChange, onEnable, onSkip }) 
             <AlertDialogContent className="sm:max-w-md" dir={dir}>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
-                        <BellRing className="w-5 h-5 text-purple-600" />
+                        <BellRing className="w-5 h-5 text-primary" />
                         {t('enableNotificationsTitle')}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
@@ -28,7 +28,7 @@ const NotificationPermissionDialog = ({ open, onOpenChange, onEnable, onSkip }) 
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="sm:justify-start gap-2">
-                    <AlertDialogAction onClick={onEnable} className="bg-purple-600 hover:bg-purple-700 text-white">
+                    <AlertDialogAction onClick={onEnable} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                         {t('enable')}
                     </AlertDialogAction>
                     <AlertDialogCancel onClick={onSkip} className="mt-0">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Loader2, Video, Download, Sparkles, AlertCircle, AudioLines, Share2 } from "lucide-react";
+import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -209,17 +209,18 @@ const ExperimentalVideoGenerator = () => {
     return (
         <div className="relative min-h-screen pt-8 w-full overflow-hidden bg-background font-sans selection:bg-primary/30" dir={dir}>
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[30%] w-[40%] h-[40%] rounded-full bg-purple-500/10 blur-[100px] animate-pulse"></div>
+                <div className="absolute top-[10%] left-[10%] w-[30%] h-[30%] rounded-full bg-primary/5 blur-[100px]"></div>
+                <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]"></div>
             </div>
 
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
                 <div className="w-full max-w-2xl flex flex-col gap-8">
 
                     {/* Left: Input Form */}
-                    <Card className="border-border bg-card/50 backdrop-blur-xl shadow-2xl border-purple-500/20">
+                    <Card className="border-border bg-card/50 backdrop-blur-xl shadow-xl">
                         <CardHeader>
                             <CardTitle className="text-3xl font-bold text-foreground flex items-center gap-2">
-                                <Sparkles className="w-8 h-8 text-purple-600" />
+                                <BookOpen className="w-8 h-8 text-primary" />
                                 {t('appTitle')}
                             </CardTitle>
                             <CardDescription className="text-muted-foreground text-base">
@@ -239,7 +240,7 @@ const ExperimentalVideoGenerator = () => {
                                                     <FormLabel className="text-foreground">{t('surah')}</FormLabel>
                                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                         <FormControl>
-                                                            <SelectTrigger className="bg-background/50 border-input focus:border-purple-500 focus:ring-purple-500/20 text-foreground">
+                                                            <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
                                                                 <SelectValue placeholder={t('selectSurah')} />
                                                             </SelectTrigger>
                                                         </FormControl>
@@ -264,7 +265,7 @@ const ExperimentalVideoGenerator = () => {
                                                     <FormLabel className="text-foreground">{t('platform')}</FormLabel>
                                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                         <FormControl>
-                                                            <SelectTrigger className="bg-background/50 border-input focus:border-purple-500 focus:ring-purple-500/20 text-foreground">
+                                                            <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
                                                                 <SelectValue placeholder={t('selectPlatform')} />
                                                             </SelectTrigger>
                                                         </FormControl>
@@ -287,7 +288,7 @@ const ExperimentalVideoGenerator = () => {
                                                         <FormLabel className="text-foreground">{t('resolution')}</FormLabel>
                                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                             <FormControl>
-                                                                <SelectTrigger className="bg-background/50 border-input focus:border-purple-500 focus:ring-purple-500/20 text-foreground">
+                                                                <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
                                                                     <SelectValue placeholder={t('selectResolution')} />
                                                                 </SelectTrigger>
                                                             </FormControl>
@@ -317,7 +318,7 @@ const ExperimentalVideoGenerator = () => {
                                                             type="number"
                                                             min="1"
                                                             {...field}
-                                                            className="bg-background/50 border-input focus:border-purple-500 focus:ring-purple-500/20 text-foreground"
+                                                            className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground"
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
@@ -336,7 +337,7 @@ const ExperimentalVideoGenerator = () => {
                                                             type="number"
                                                             min="1"
                                                             {...field}
-                                                            className="bg-background/50 border-input focus:border-purple-500 focus:ring-purple-500/20 text-foreground"
+                                                            className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground"
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
@@ -374,7 +375,7 @@ const ExperimentalVideoGenerator = () => {
                                                 </FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-background/50 border-input focus:border-purple-500 focus:ring-purple-500/20 text-foreground">
+                                                        <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
                                                             <SelectValue placeholder={t('selectReciter')} />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -393,7 +394,7 @@ const ExperimentalVideoGenerator = () => {
 
                                     <Button
                                         type="submit"
-                                        className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-lg shadow-purple-500/20 transition-all duration-300 transform hover:scale-[1.02]"
+                                        className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-lg shadow-primary/20 transition-all duration-300 transform hover:scale-[1.02]"
                                         disabled={loading}
                                     >
                                         {loading ? (
@@ -403,7 +404,7 @@ const ExperimentalVideoGenerator = () => {
                                             </>
                                         ) : (
                                             <>
-                                                <Sparkles className="mr-2 h-5 w-5" />
+                                                <BookOpen className="mr-2 h-5 w-5" />
                                                 {t('generateBtn')}
                                             </>
                                         )}
@@ -415,29 +416,29 @@ const ExperimentalVideoGenerator = () => {
 
                     {/* Right: Result / Preview */}
                     <div className="flex flex-col gap-6">
-                        <Card className="h-full min-h-[500px] border-border bg-card/50 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group border-purple-500/20">
+                        <Card className="h-full min-h-[500px] border-border bg-card/50 backdrop-blur-xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group">
                             {/* Placeholder Pattern */}
                             {!videoUrl && !loading && (
-                                <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#a855f7_1px,transparent_1px)] dark:bg-[radial-gradient(#d8b4fe_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
                             )}
 
                             {loading ? (
                                 <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground w-3/4 max-w-sm">
                                     <div className="relative mb-4">
-                                        <div className="w-16 h-16 rounded-full border-4 border-muted border-t-purple-500 animate-spin"></div>
+                                        <div className="w-16 h-16 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <Sparkles className="w-6 h-6 text-purple-500 animate-pulse" />
+                                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
                                         </div>
                                     </div>
                                     <div className="w-full space-y-2 text-center">
-                                        <p className="font-medium text-foreground animate-pulse">{statusMessage ? t(statusMessage) : t('creatingMagic')}</p>
-                                        <Progress value={progress} className="w-full h-2 bg-purple-100 dark:bg-purple-900" />
+                                        <p className="font-medium text-foreground animate-pulse">{statusMessage ? t(statusMessage) : t('status_processing_video')}</p>
+                                        <Progress value={progress} className="w-full h-2 bg-primary/20" />
                                         <p className="text-xs text-muted-foreground">{progress}%</p>
                                     </div>
                                 </div>
                             ) : videoUrl ? (
                                 <div className="w-full h-full p-4 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
-                                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-border group-hover:border-purple-500/30 transition-colors">
+                                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-border group-hover:border-primary/30 transition-colors">
                                         <video
                                             src={videoUrl}
                                             controls
@@ -447,7 +448,7 @@ const ExperimentalVideoGenerator = () => {
                                     <div className="flex gap-2 w-full">
                                         <Button
                                             variant="outline"
-                                            className="flex-1 border-input hover:bg-accent hover:text-accent-foreground text-purple-600 border-purple-200 dark:border-purple-800"
+                                            className="flex-1 border-input hover:bg-accent hover:text-accent-foreground text-primary border-primary/20"
                                             onClick={() => {
                                                 const a = document.createElement("a");
                                                 a.href = videoUrl;
@@ -461,7 +462,7 @@ const ExperimentalVideoGenerator = () => {
                                             {t('downloadBtn')}
                                         </Button>
                                         <Button
-                                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                                            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                                             onClick={async () => {
                                                 try {
                                                     // For large files, use URL sharing instead of file sharing
@@ -494,8 +495,8 @@ const ExperimentalVideoGenerator = () => {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground">
-                                    <div className="w-20 h-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-2 rotate-3 group-hover:rotate-6 transition-transform duration-500">
-                                        <Video className="w-10 h-10 text-muted-foreground group-hover:text-purple-500 transition-colors" />
+                                    <div className="w-20 h-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-2 transition-transform duration-500">
+                                        <Video className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
                                     </div>
                                     <div className="text-center">
                                         <h3 className="text-lg font-medium text-foreground">{t('previewTitle')}</h3>

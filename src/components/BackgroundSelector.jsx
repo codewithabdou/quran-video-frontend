@@ -37,6 +37,11 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
                 if (data.videos && data.videos.length > 0) {
                     setVideos(data.videos);
+                    // Auto-select the first background if none is selected yet
+                    if (!value || value === 'default') {
+                        const firstVideoLink = `https://www.pexels.com/download/video/${data.videos[0].id}/`;
+                        onChange(firstVideoLink);
+                    }
                 } else {
                     // Show friendly message instead of error
                     setError(null);

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { translations } from "./lib/translations";
+import Footer from "./components/Footer";
 
 // Lazy load route components for better performance
 const LandingPage = lazy(() => import("./components/LandingPage"));
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/generate" element={<ExperimentalVideoGenerator />} />
               </Routes>
             </Suspense>
+            <Footer />
             <Toaster />
           </div>
         </BrowserRouter>

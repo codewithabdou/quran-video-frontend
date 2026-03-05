@@ -28,7 +28,7 @@ describe('ThemeLanguageControls', () => {
 
     it('should render navigation button', () => {
         renderWithProviders(<ThemeLanguageControls />);
-        // Should render either Home or Sparkles button depending on route
+        // Should render either Home or BookOpen button depending on route
         const buttons = screen.getAllByRole('button');
         expect(buttons.length).toBeGreaterThan(0);
     });

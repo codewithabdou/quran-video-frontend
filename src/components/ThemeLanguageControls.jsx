@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, Globe, Sparkles, Home } from 'lucide-react';
+import { Moon, Sun, Globe, BookOpen, Home } from 'lucide-react';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -39,10 +39,10 @@ const ThemeLanguageControls = () => {
                     variant="outline"
                     size="icon"
                     onClick={() => navigate('/generate')}
-                    className="bg-background/50 backdrop-blur border-border hover:bg-purple-500/10 hover:text-purple-600 hover:border-purple-500/50 transition-all text-purple-500"
+                    className="bg-background/50 backdrop-blur border-border hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all text-primary"
                     title="Start Generator"
                 >
-                    <Sparkles className="h-[1.2rem] w-[1.2rem]" />
+                    <BookOpen className="h-[1.2rem] w-[1.2rem]" />
                 </Button>
             )}
 

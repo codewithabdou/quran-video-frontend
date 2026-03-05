@@ -54,7 +54,11 @@ export const translations = {
         notNow: "Not Now",
         loading: "Loading...",
         backgroundUnavailable: "Background selection unavailable",
-        backgroundUnavailableDesc: "Don't worry! A default background will be used automatically."
+        backgroundUnavailableDesc: "Don't worry! A default background will be used automatically.",
+        footerMadeWith: "Made by",
+        footerName: "Khaled Abderrahmène Habouche",
+        footerDua: "لا تنسونا من صالح دعائكم",
+        footerRights: "All rights reserved."
     },
     fr: {
         appTitle: "Créer des Vidéos Coraniques",
@@ -111,7 +115,11 @@ export const translations = {
         notNow: "Pas Maintenant",
         loading: "Chargement...",
         backgroundUnavailable: "Sélection d'arrière-plan indisponible",
-        backgroundUnavailableDesc: "Ne vous inquiétez pas ! Un arrière-plan par défaut sera utilisé automatiquement."
+        backgroundUnavailableDesc: "Ne vous inquiétez pas ! Un arrière-plan par défaut sera utilisé automatiquement.",
+        footerMadeWith: "Créé par",
+        footerName: "Khaled Abderrahmène Habouche",
+        footerDua: "لا تنسونا من صالح دعائكم",
+        footerRights: "Tous droits réservés."
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -157,7 +165,7 @@ export const translations = {
         videoGeneratedSuccess: "تم إنشاء الفيديو بنجاح!",
         errorSomethingWentWrong: "حدث خطأ ما",
         welcomeTitle: "أنشئ مقاطع فيديو قرآنية رائعة",
-        welcomeDesc: "قم بإنشاء مقاطع فيديو مذهلة مع صوت وترجمة متزامنة لـ TikTok و Reels و YouTube في ثوانٍ.",
+        welcomeDesc: "قم بإنشاء مقاطع فيديو مذهلة مع صوت وترجمة متزامنة لـ تيك توك، ريلز، و يوتيوب في ثوانٍ.",
         startNowBtn: "ابدأ الآن",
         featuresTitle: "لماذا تستخدم مولد الفيديو القرآني؟",
         shareBtn: "مشاركة الفيديو",
@@ -168,6 +176,10 @@ export const translations = {
         notNow: "ليس الآن",
         loading: "جاري التحميل...",
         backgroundUnavailable: "اختيار الخلفية غير متاح",
-        backgroundUnavailableDesc: "لا تقلق! سيتم استخدام خلفية افتراضية تلقائياً."
+        backgroundUnavailableDesc: "لا تقلق! سيتم استخدام خلفية افتراضية تلقائياً.",
+        footerMadeWith: "صُنع بواسطة",
+        footerName: "خالد عبد الرحمن حبوش",
+        footerDua: "لا تنسونا من صالح دعائكم",
+        footerRights: "جميع الحقوق محفوظة."
     }
 };

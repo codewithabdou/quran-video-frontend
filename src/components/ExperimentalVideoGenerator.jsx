@@ -35,6 +35,7 @@ const ExperimentalVideoGenerator = () => {
     const [loading, setLoading] = useState(false);
     const [videoUrl, setVideoUrl] = useState(null);
     const [progress, setProgress] = useState(0);
+    const [queuePosition, setQueuePosition] = useState(null);
     const [statusMessage, setStatusMessage] = useState("");
     const [showPermissionDialog, setShowPermissionDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState(null);
@@ -104,65 +105,91 @@ const ExperimentalVideoGenerator = () => {
         setLoading(true);
         setVideoUrl(null);
         setProgress(0);
-        setStatusMessage("status_starting");
+        setQueuePosition(null);
+        setStatusMessage("status_queued");
 
         // Generate Request ID
         const requestId = crypto.randomUUID();
 
         // Subscribe to notifications BEFORE starting generation
-        // This ensures the subscription is active when the backend finishes
         subscribeToPush(requestId);
 
-        // Start SSE Subscriber
-        const progressEndpoint = `${NODE_API_URL}/api/v1/progress/${requestId}`;
-        const eventSource = new EventSource(progressEndpoint);
-
-        eventSource.onmessage = (event) => {
-            try {
-                const payload = JSON.parse(event.data);
-                if (payload.status === "completed" || payload.percentage === 100) {
-                    setProgress(100);
-                    setStatusMessage("status_completed");
-                    eventSource.close();
-                } else if (payload.percentage !== undefined) {
-                    setProgress(payload.percentage);
-                    setStatusMessage(payload.status);
-                } else if (payload.error) {
-                    toast.error(payload.error);
-                    eventSource.close();
-                }
-            } catch (e) {
-                console.error("Error parsing progress:", e);
-            }
-        };
-
         try {
-            // Call Node Backend
-            const response = await axios.post(`${NODE_API_URL}/api/v1/generate-video`, {
+            // 1. Queue the video generation job (returns immediately)
+            const queueResponse = await axios.post(`${NODE_API_URL}/api/v1/generate-video`, {
                 ...data,
                 surah: parseInt(data.surah),
                 ayah_start: parseInt(data.ayah_start),
                 ayah_end: parseInt(data.ayah_end),
                 resolution: parseInt(data.resolution),
                 reciter_id: data.reciter_id,
-                translation_id: "en.sahih", // Default translation
+                translation_id: "en.sahih",
                 request_id: requestId,
                 background_url: data.background_url,
                 platform: data.platform
-            }, {
+            });
+
+            const jobId = queueResponse.data.jobId;
+            setStatusMessage("status_queued");
+
+            // 2. Start SSE to track progress
+            const progressEndpoint = `${NODE_API_URL}/api/v1/progress/${jobId}`;
+            const eventSource = new EventSource(progressEndpoint);
+
+            // Wrap SSE in a promise so we can await completion
+            await new Promise((resolve, reject) => {
+                eventSource.onmessage = (event) => {
+                    try {
+                        const payload = JSON.parse(event.data);
+                        if (payload.status === "status_completed" || payload.status === "completed" || payload.percentage === 100) {
+                            setProgress(100);
+                            setStatusMessage("status_completed");
+                            eventSource.close();
+                            resolve();
+                        } else if (payload.error) {
+                            eventSource.close();
+                            reject(new Error(payload.error));
+                        } else if (payload.percentage !== undefined) {
+                            setProgress(payload.percentage);
+                            setStatusMessage(payload.status);
+                            if (payload.queuePosition !== undefined) {
+                                setQueuePosition(payload.queuePosition);
+                            } else {
+                                setQueuePosition(null);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error parsing progress:", e);
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+                    reject(new Error("Connection to progress stream lost"));
+                };
+
+                // Safety timeout — close SSE after 10 minutes
+                setTimeout(() => {
+                    eventSource.close();
+                    reject(new Error("Generation timed out"));
+                }, 10 * 60 * 1000);
+            });
+
+            // 3. Download the completed video
+            setStatusMessage("status_downloading");
+            const videoResponse = await axios.get(`${NODE_API_URL}/api/v1/download/${jobId}`, {
                 responseType: 'blob'
             });
 
-
-            const url = URL.createObjectURL(response.data);
+            const url = URL.createObjectURL(videoResponse.data);
             setVideoUrl(url);
             toast.success(t('videoGeneratedSuccess'));
+
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.error || err.message || t('errorSomethingWentWrong'));
         } finally {
             setLoading(false);
-            eventSource.close();
         }
     };
 
@@ -431,7 +458,11 @@ const ExperimentalVideoGenerator = () => {
                                         </div>
                                     </div>
                                     <div className="w-full space-y-2 text-center">
-                                        <p className="font-medium text-foreground animate-pulse">{statusMessage ? t(statusMessage) : t('status_processing_video')}</p>
+                                        <p className="font-medium text-foreground animate-pulse">
+                                            {statusMessage === 'status_queued' && queuePosition
+                                                ? t('status_queued_position').replace('{{position}}', queuePosition)
+                                                : statusMessage ? t(statusMessage) : t('status_processing_video')}
+                                        </p>
                                         <Progress value={progress} className="w-full h-2 bg-primary/20" />
                                         <p className="text-xs text-muted-foreground">{progress}%</p>
                                     </div>

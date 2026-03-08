@@ -1,3 +1,4 @@
+// @refresh reset
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { translations } from '../lib/translations';
 
@@ -8,6 +9,10 @@ export const ThemeLanguageProvider = ({ children }) => {
     const [language, setLanguage] = useState(() => {
         return localStorage.getItem('language') || 'en';
     });
+
+    useEffect(() => {
+        localStorage.setItem('language', language);
+    }, [language]);
 
     // Theme State
     const [theme, setTheme] = useState(() => {

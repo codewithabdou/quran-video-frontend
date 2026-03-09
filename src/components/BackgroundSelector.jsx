@@ -39,7 +39,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                     setVideos(data.videos);
                     // Auto-select the first background if none is selected yet
                     if (!value || value === 'default') {
-                        const firstVideoLink = `https://www.pexels.com/download/video/${data.videos[0].id}/`;
+                        const firstVideoLink = getBestVideoLink(data.videos[0]);
                         onChange(firstVideoLink);
                     }
                 } else {
@@ -62,7 +62,10 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
     // Helper to get download URL
     const getBestVideoLink = (videoData) => {
-        return `https://www.pexels.com/download/video/${videoData.id}/`;
+        if (videoData.video_files && videoData.video_files.length > 0) {
+            return videoData.video_files[0].link;
+        }
+        return `https://www.pexels.com/download/video/${videoData.id}/`; // fallback
     };
 
     if (loading) {

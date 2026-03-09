@@ -115,6 +115,65 @@ const ExperimentalVideoGenerator = () => {
         subscribeToPush(requestId);
 
         try {
+            let finalBackgroundUrl = data.background_url;
+
+            // If the user selected an external Pexels video, download it locally via the browser first (Residential IP)
+            if (finalBackgroundUrl && finalBackgroundUrl !== 'default' && (finalBackgroundUrl.startsWith('http://') || finalBackgroundUrl.startsWith('https://'))) {
+                try {
+                    // Extract Video ID from Pexels mp4 URL (e.g. videos.pexels.com/.../6527132_hd...)
+                    // Match any consecutive block of at least 5 digits in the URL.
+                    const idMatch = finalBackgroundUrl.match(/videos\.pexels\.com.*?\/(\d{5,})/);
+                    let pexelsId = idMatch ? idMatch[1] : null;
+                    if (!pexelsId) {
+                        // Fallback numeric extraction
+                        const rawMatch = finalBackgroundUrl.match(/(\d{5,})/);
+                        pexelsId = rawMatch ? rawMatch[1] : `fallback-${Date.now()}`;
+                    }
+
+                    // 1. Ask the backend if it already has this Pexels ID cached in its uploads directory
+                    const checkResponse = await axios.post(`${NODE_API_URL}/api/v1/check-background`, {
+                        id: pexelsId
+                    });
+
+                    if (checkResponse.data.exists) {
+                        // Cache HIT! Instant generation.
+                        finalBackgroundUrl = checkResponse.data.filePath;
+                        console.log("Cache Hit! Server already has this background:", finalBackgroundUrl);
+                    } else {
+                        // Cache MISS. We must download it and upload it once.
+                        setStatusMessage("fetching_background_locally");
+
+                        // Fetch the MP4 directly into the browser
+                        const videoBlob = await fetch(finalBackgroundUrl).then(r => {
+                            if (!r.ok) throw new Error("Failed to fetch video directly");
+                            return r.blob();
+                        });
+
+                        // Wrap in FormData and affix the exact ID BEFORE the file block 
+                        // so Multer's filename parser can read the ID string before streaming the heavy video blob.
+                        const formData = new FormData();
+                        formData.append("id", pexelsId);
+                        formData.append("file", videoBlob, "background.mp4");
+
+                        // Upload to our Node backend
+                        setStatusMessage("uploading_background_to_server");
+                        const uploadResponse = await axios.post(`${NODE_API_URL}/api/v1/upload-background`, formData, {
+                            headers: { "Content-Type": "multipart/form-data" }
+                        });
+
+                        // Override the payload to tell the backend to use the local saved file path
+                        finalBackgroundUrl = uploadResponse.data.filePath;
+                        console.log("Cache Miss. Successfully downloaded and cached permanently on server at:", finalBackgroundUrl);
+                    }
+
+                } catch (cacheOrUploadError) {
+                    console.error("Browser caching/upload pipeline failed, falling back to legacy download:", cacheOrUploadError);
+                    // It will attempt the default backend download logic as a desperate fallback if this fails
+                }
+            }
+
+            setStatusMessage("status_queued");
+
             // 1. Queue the video generation job (returns immediately)
             const queueResponse = await axios.post(`${NODE_API_URL}/api/v1/generate-video`, {
                 ...data,
@@ -125,7 +184,7 @@ const ExperimentalVideoGenerator = () => {
                 reciter_id: data.reciter_id,
                 translation_id: "en.sahih",
                 request_id: requestId,
-                background_url: data.background_url,
+                background_url: finalBackgroundUrl, // Send the localized upload path or the original
                 platform: data.platform
             });
 
@@ -187,7 +246,17 @@ const ExperimentalVideoGenerator = () => {
 
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.error || err.message || t('errorSomethingWentWrong'));
+
+            // Safely extract error message to prevent React rendering crashes if response is an Object
+            let errorMsg = t('errorSomethingWentWrong');
+            if (err.response?.data?.error) {
+                const apiErr = err.response.data.error;
+                errorMsg = typeof apiErr === 'string' ? apiErr : apiErr.message || JSON.stringify(apiErr);
+            } else if (err.message) {
+                errorMsg = err.message;
+            }
+
+            toast.error(errorMsg);
         } finally {
             setLoading(false);
         }

@@ -550,9 +550,13 @@ const ExperimentalVideoGenerator = () => {
                                             variant="outline"
                                             className="flex-1 border-input hover:bg-accent hover:text-accent-foreground text-primary border-primary/20"
                                             onClick={() => {
+                                                const values = form.getValues();
+                                                const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
+                                                const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
+                                                const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
                                                 const a = document.createElement("a");
                                                 a.href = videoUrl;
-                                                a.download = `quran_reels_${form.getValues('surah')}.mp4`;
+                                                a.download = fileName;
                                                 document.body.appendChild(a);
                                                 a.click();
                                                 document.body.removeChild(a);
@@ -565,22 +569,33 @@ const ExperimentalVideoGenerator = () => {
                                             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                                             onClick={async () => {
                                                 try {
-                                                    // For large files, use URL sharing instead of file sharing
-                                                    if (navigator.share) {
-                                                        // Try sharing with URL (works better for large files)
+                                                    const values = form.getValues();
+                                                    const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
+                                                    const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
+                                                    const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
+
+                                                    // Fetch the video blob from the object URL
+                                                    const response = await fetch(videoUrl);
+                                                    const blob = await response.blob();
+                                                    const file = new File([blob], fileName, { type: 'video/mp4' });
+
+                                                    // Check if the browser supports sharing files
+                                                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
                                                         await navigator.share({
-                                                            title: 'Quran Video',
+                                                            title: `Quran - ${surahData ? surahData.name : 'Video'} (${values.ayah_start}-${values.ayah_end})`,
+                                                            files: [file],
+                                                        });
+                                                    } else if (navigator.share) {
+                                                        // Fallback: share URL if file sharing is not supported
+                                                        await navigator.share({
+                                                            title: `Quran - ${surahData ? surahData.name : 'Video'}`,
                                                             text: 'Check out this video generated with Quran Video Generator!',
                                                             url: window.location.href
                                                         });
                                                     } else {
-                                                        // Fallback: copy download link to clipboard
-                                                        const downloadLink = videoUrl;
-                                                        await navigator.clipboard.writeText(downloadLink);
-                                                        toast.success('Download link copied to clipboard!');
+                                                        toast.error(t('shareNotSupported'));
                                                     }
                                                 } catch (err) {
-                                                    // If sharing fails or is cancelled, try file download
                                                     if (err.name !== 'AbortError') {
                                                         console.error("Sharing failed:", err);
                                                         toast.error(t('shareNotSupported'));

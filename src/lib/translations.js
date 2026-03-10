@@ -70,7 +70,10 @@ export const translations = {
         cancelActiveJobDesc: "You already have a video generating. Are you sure you want to cancel it to start a new one?",
         confirmCancel: "Yes, Cancel It",
         keepGenerating: "No, Keep Waiting",
-        cancelSuccess: "Active generation cancelled successfully."
+        cancelSuccess: "Active generation cancelled successfully.",
+        errorConnectionLost: "Server connection lost. Please try again.",
+        errorGenerationTimeout: "Generation took too long. Please try again.",
+        errorGenerationFailed: "Generation failed. The server might be overloaded or out of memory. Try a lower resolution."
     },
     fr: {
         appTitle: "Créer des Vidéos Coraniques",
@@ -143,7 +146,10 @@ export const translations = {
         cancelActiveJobDesc: "Vous avez déjà une vidéo en cours de création. Êtes-vous sûr de vouloir l'annuler pour en commencer une nouvelle ?",
         confirmCancel: "Oui, Annuler",
         keepGenerating: "Non, Continuer l'attente",
-        cancelSuccess: "Génération active annulée avec succès."
+        cancelSuccess: "Génération active annulée avec succès.",
+        errorConnectionLost: "Connexion au serveur perdue. Veuillez réessayer.",
+        errorGenerationTimeout: "La création a pris trop de temps. Veuillez réessayer.",
+        errorGenerationFailed: "La création a échoué. Le serveur manque peut-être de mémoire. Essayez une résolution inférieure."
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -216,6 +222,9 @@ export const translations = {
         cancelActiveJobDesc: "لديك بالفعل فيديو قيد الإنشاء. هل أنت متأكد أنك تريد إلغاءه للبدء في فيديو جديد؟",
         confirmCancel: "نعم، إلغاء الإنشاء",
         keepGenerating: "لا، الاستمرار في الانتظار",
-        cancelSuccess: "تم إلغاء الإنشاء الحالي بنجاح."
+        cancelSuccess: "تم إلغاء الإنشاء الحالي بنجاح.",
+        errorConnectionLost: "تم فقدان الاتصال بالخادم. يرجى المحاولة مرة أخرى.",
+        errorGenerationTimeout: "استغرق الإنشاء وقتًا طويلاً. يرجى المحاولة مرة أخرى.",
+        errorGenerationFailed: "فشل الإنشاء. قد يكون الخادم محملاً أو لا توجد ذاكرة كافية. جرب دقة أقل."
     }
 };

@@ -277,8 +277,9 @@ const ExperimentalVideoGenerator = () => {
                             eventSource.close();
                             resolve();
                         } else if (payload.error) {
+                            console.error("Backend generation error:", payload.error);
                             eventSource.close();
-                            reject(new Error(payload.error));
+                            reject(new Error('errorGenerationFailed'));
                         } else if (payload.percentage !== undefined) {
                             setProgress(payload.percentage);
                             setStatusMessage(payload.status);
@@ -295,14 +296,18 @@ const ExperimentalVideoGenerator = () => {
 
                 eventSource.onerror = () => {
                     eventSource.close();
-                    reject(new Error("Connection to progress stream lost"));
+                    reject(new Error("errorConnectionLost"));
                 };
 
                 // Safety timeout — close SSE after 10 minutes
-                setTimeout(() => {
+                const timeoutId = setTimeout(() => {
                     eventSource.close();
-                    reject(new Error("Generation timed out"));
+                    reject(new Error("errorGenerationTimeout"));
                 }, 10 * 60 * 1000);
+
+                // Assuming success/failure will eventually trigger a resolve/reject internally
+                // We should clear the timeout when it does, but since it's wrapped in a promise, we handle it loosely 
+                // in the `finally` block or let the UI reset it.
             });
 
             // 3. Download the completed video
@@ -321,8 +326,10 @@ const ExperimentalVideoGenerator = () => {
             if (err.message === 'cancelled') {
                 // The SSE detected a 'cancelled' status — show a friendly message
                 toast.info(t('generationCancelled'));
-            } else if (err.response?.status === 429) {
-                // If they hit the concurrency limiter, open the cancel dialog
+            } else if (['errorConnectionLost', 'errorGenerationTimeout', 'errorGenerationFailed'].includes(err.message)) {
+                toast.error(t(err.message));
+            } else if (err.response?.status === 429 && err.response?.data?.error?.existingJobId) {
+                // If they hit the concurrency limiter (has an active job), open the cancel dialog
                 setShowActiveJobDialog(true);
             } else {
                 // Determine standard error message
@@ -753,24 +760,24 @@ const ExperimentalVideoGenerator = () => {
             />
 
             <AlertDialog open={showActiveJobDialog} onOpenChange={setShowActiveJobDialog}>
-                <AlertDialogContent dir={dir}>
+                <AlertDialogContent className="sm:max-w-md" dir={dir}>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('cancelActiveJobTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {t('cancelActiveJobDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="sm:justify-start flex-row-reverse sm:flex-row gap-2">
+                    <AlertDialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4">
                         <Button
                             variant="destructive"
                             onClick={handleForceCancelActiveJob}
                             disabled={isCancelingActiveJob}
-                            className="bg-destructive hover:bg-destructive/90 w-full sm:w-auto mt-2 sm:mt-0"
+                            className="w-full sm:w-auto mt-2 sm:mt-0"
                         >
                             {isCancelingActiveJob ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                             {t('confirmCancel')}
                         </Button>
-                        <AlertDialogCancel disabled={isCancelingActiveJob} className="w-full sm:w-auto">
+                        <AlertDialogCancel disabled={isCancelingActiveJob} className="w-full sm:w-auto mt-0">
                             {t('keepGenerating')}
                         </AlertDialogCancel>
                     </AlertDialogFooter>

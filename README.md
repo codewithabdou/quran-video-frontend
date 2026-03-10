@@ -1,4 +1,4 @@
-# 📖 Quran Videos Generator
+# Quran Videos Generator
 
 ![Project Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -46,11 +46,12 @@ A modern, automated web application for creating engaging Quran video videoss. B
 
 ## Features
 - **Format Flexibility**: Create vertical (9:16) videos for TikTok/Reels or horizontal (16:9) for YouTube.
-- **Social Sharing**: Share generated videos directly to WhatsApp, Instagram, and more with a single click.
+- **Native Video Sharing**: Leverage the Web Share API to directly share the actual generated MP4 video files to apps like WhatsApp, Instagram, and more (on supported devices).
 - **Dynamic Backgrounds**: Search and select dynamic video backgrounds driven by Pexels.
 - **Multi-Language Support**: Fully translated interface in English, French, and Arabic.
-- **Dark/Light Mode**: Beautifully designed UI with seamless theme web switching.
-- **Real-Time Progress**: Live visual feedback during video generation.
+- **Dark/Light Mode**: Beautifully designed UI with seamless theme switching.
+- **Robust Queue System**: Real-time visual feedback during video generation, including your exact position in the server queue.
+- **Fair Usage Enforcement**: Built-in handling for server-side concurrency limits, ensuring all users get fair access to processing resources.
 
 ## Usage
 
@@ -58,13 +59,9 @@ A modern, automated web application for creating engaging Quran video videoss. B
 2.  **Choose Layout**: Select **Reel (9:16)** for TikTok/Instagram or **YouTube (16:9)**.
 3.  **Set Range**: Specify the starting and ending Ayah.
 4.  **Select Reciter**: Choose your preferred Qari.
-5.  **Generate**: Click "Generate Video" and wait for the magic! ✨
+5.  **Generate**: Click "Generate Video" and wait for the magic!
 6.  **Share or Download**: Preview your video, then download it or share it directly to your social apps.
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).

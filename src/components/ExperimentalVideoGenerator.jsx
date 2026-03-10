@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2 } from "lucide-react";
+import { Audio } from "react-loader-spinner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -249,7 +250,10 @@ const ExperimentalVideoGenerator = () => {
 
             // Safely extract error message to prevent React rendering crashes if response is an Object
             let errorMsg = t('errorSomethingWentWrong');
-            if (err.response?.data?.error) {
+            if (err.response?.status === 429) {
+                // Use our new frontend translation for the concurrency limit
+                errorMsg = t('errorTooManyRequests');
+            } else if (err.response?.data?.error) {
                 const apiErr = err.response.data.error;
                 errorMsg = typeof apiErr === 'string' ? apiErr : apiErr.message || JSON.stringify(apiErr);
             } else if (err.message) {
@@ -520,11 +524,16 @@ const ExperimentalVideoGenerator = () => {
 
                             {loading ? (
                                 <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground w-3/4 max-w-sm">
-                                    <div className="relative mb-4">
-                                        <div className="w-16 h-16 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                                        </div>
+                                    <div className="flex justify-center items-center mb-4 min-h-[100px]">
+                                        <Audio
+                                            height="100"
+                                            width="100"
+                                            color="#4fa94d"
+                                            ariaLabel="audio-loading"
+                                            wrapperStyle={{}}
+                                            wrapperClass="wrapper-class"
+                                            visible={true}
+                                        />
                                     </div>
                                     <div className="w-full space-y-2 text-center">
                                         <p className="font-medium text-foreground animate-pulse">

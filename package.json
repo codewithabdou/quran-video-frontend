@@ -36,6 +36,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.68.0",
+    "react-loader-spinner": "^8.0.2",
     "react-router-dom": "^7.10.1",
     "sonner": "^2.0.7",
     "swiper": "^12.0.3",

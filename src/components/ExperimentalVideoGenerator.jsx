@@ -13,6 +13,16 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     Form,
     FormControl,
     FormDescription,
@@ -41,6 +51,8 @@ const ExperimentalVideoGenerator = () => {
     const [showPermissionDialog, setShowPermissionDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState(null);
     const [showCancel, setShowCancel] = useState(false);
+    const [showActiveJobDialog, setShowActiveJobDialog] = useState(false);
+    const [isCancelingActiveJob, setIsCancelingActiveJob] = useState(false);
 
     // Ref to track the active EventSource so we can close it on cancel
     const eventSourceRef = useRef(null);
@@ -254,7 +266,12 @@ const ExperimentalVideoGenerator = () => {
                 eventSource.onmessage = (event) => {
                     try {
                         const payload = JSON.parse(event.data);
-                        if (payload.status === "status_completed" || payload.status === "completed" || payload.percentage === 100) {
+                        if (payload.status === "cancelled") {
+                            setProgress(0);
+                            setStatusMessage("");
+                            eventSource.close();
+                            reject(new Error('cancelled'));
+                        } else if (payload.status === "status_completed" || payload.status === "completed" || payload.percentage === 100) {
                             setProgress(100);
                             setStatusMessage("status_completed");
                             eventSource.close();
@@ -301,19 +318,23 @@ const ExperimentalVideoGenerator = () => {
         } catch (err) {
             console.error(err);
 
-            // Safely extract error message to prevent React rendering crashes if response is an Object
-            let errorMsg = t('errorSomethingWentWrong');
-            if (err.response?.status === 429) {
-                // Use our new frontend translation for the concurrency limit
-                errorMsg = t('errorTooManyRequests');
-            } else if (err.response?.data?.error) {
-                const apiErr = err.response.data.error;
-                errorMsg = typeof apiErr === 'string' ? apiErr : apiErr.message || JSON.stringify(apiErr);
-            } else if (err.message) {
-                errorMsg = err.message;
+            if (err.message === 'cancelled') {
+                // The SSE detected a 'cancelled' status — show a friendly message
+                toast.info(t('generationCancelled'));
+            } else if (err.response?.status === 429) {
+                // If they hit the concurrency limiter, open the cancel dialog
+                setShowActiveJobDialog(true);
+            } else {
+                // Determine standard error message
+                let errorMsg = t('errorSomethingWentWrong');
+                if (err.response?.data?.error) {
+                    const apiErr = err.response.data.error;
+                    errorMsg = typeof apiErr === 'string' ? apiErr : apiErr.message || JSON.stringify(apiErr);
+                } else if (err.message) {
+                    errorMsg = err.message;
+                }
+                toast.error(errorMsg);
             }
-
-            toast.error(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -356,6 +377,31 @@ const ExperimentalVideoGenerator = () => {
         if (pendingFormData) {
             startGeneration(pendingFormData);
             setPendingFormData(null);
+        }
+    };
+
+    const handleForceCancelActiveJob = async () => {
+        setIsCancelingActiveJob(true);
+        try {
+            await axios.delete(`${NODE_API_URL}/api/v1/generate-video/cancel`);
+            toast.success(t('cancelSuccess'));
+            setShowActiveJobDialog(false);
+
+            // Also clean up the local generation UI state if we're the same tab that started it
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
+            setLoading(false);
+            setProgress(0);
+            setQueuePosition(null);
+            setStatusMessage("");
+            setShowCancel(false);
+        } catch (error) {
+            console.error("Failed to cancel active job:", error);
+            toast.error("Failed to cancel the active job. Please try again later.");
+        } finally {
+            setIsCancelingActiveJob(false);
         }
     };
 
@@ -705,6 +751,31 @@ const ExperimentalVideoGenerator = () => {
                 onEnable={handleEnableNotifications}
                 onSkip={handleSkipNotifications}
             />
+
+            <AlertDialog open={showActiveJobDialog} onOpenChange={setShowActiveJobDialog}>
+                <AlertDialogContent dir={dir}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('cancelActiveJobTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('cancelActiveJobDesc')}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="sm:justify-start flex-row-reverse sm:flex-row gap-2">
+                        <Button
+                            variant="destructive"
+                            onClick={handleForceCancelActiveJob}
+                            disabled={isCancelingActiveJob}
+                            className="bg-destructive hover:bg-destructive/90 w-full sm:w-auto mt-2 sm:mt-0"
+                        >
+                            {isCancelingActiveJob ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            {t('confirmCancel')}
+                        </Button>
+                        <AlertDialogCancel disabled={isCancelingActiveJob} className="w-full sm:w-auto">
+                            {t('keepGenerating')}
+                        </AlertDialogCancel>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

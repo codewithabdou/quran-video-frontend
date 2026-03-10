@@ -65,7 +65,12 @@ export const translations = {
         footerDua: "لا تنسونا من صالح دعائكم",
         footerRights: "All rights reserved.",
         cancelGeneration: "Cancel",
-        generationCancelled: "Generation cancelled. You can try again."
+        generationCancelled: "Generation cancelled. You can try again.",
+        cancelActiveJobTitle: "Cancel Active Generation",
+        cancelActiveJobDesc: "You already have a video generating. Are you sure you want to cancel it to start a new one?",
+        confirmCancel: "Yes, Cancel It",
+        keepGenerating: "No, Keep Waiting",
+        cancelSuccess: "Active generation cancelled successfully."
     },
     fr: {
         appTitle: "Créer des Vidéos Coraniques",
@@ -133,7 +138,12 @@ export const translations = {
         footerDua: "لا تنسونا من صالح دعائكم",
         footerRights: "Tous droits réservés.",
         cancelGeneration: "Annuler",
-        generationCancelled: "Génération annulée. Vous pouvez réessayer."
+        generationCancelled: "Génération annulée. Vous pouvez réessayer.",
+        cancelActiveJobTitle: "Annuler la Génération Active",
+        cancelActiveJobDesc: "Vous avez déjà une vidéo en cours de création. Êtes-vous sûr de vouloir l'annuler pour en commencer une nouvelle ?",
+        confirmCancel: "Oui, Annuler",
+        keepGenerating: "Non, Continuer l'attente",
+        cancelSuccess: "Génération active annulée avec succès."
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -201,6 +211,11 @@ export const translations = {
         footerDua: "لا تنسونا من صالح دعائكم",
         footerRights: "جميع الحقوق محفوظة.",
         cancelGeneration: "إلغاء",
-        generationCancelled: "تم إلغاء الإنشاء. يمكنك المحاولة مرة أخرى."
+        generationCancelled: "تم إلغاء الإنشاء. يمكنك المحاولة مرة أخرى.",
+        cancelActiveJobTitle: "إلغاء الإنشاء الحالي",
+        cancelActiveJobDesc: "لديك بالفعل فيديو قيد الإنشاء. هل أنت متأكد أنك تريد إلغاءه للبدء في فيديو جديد؟",
+        confirmCancel: "نعم، إلغاء الإنشاء",
+        keepGenerating: "لا، الاستمرار في الانتظار",
+        cancelSuccess: "تم إلغاء الإنشاء الحالي بنجاح."
     }
 };

@@ -528,7 +528,7 @@ const ExperimentalVideoGenerator = () => {
                                         <Audio
                                             height="100"
                                             width="100"
-                                            color="#4fa94d"
+                                            color="#27b059"
                                             ariaLabel="audio-loading"
                                             wrapperStyle={{}}
                                             wrapperClass="wrapper-class"

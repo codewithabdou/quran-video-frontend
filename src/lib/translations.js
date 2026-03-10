@@ -63,7 +63,9 @@ export const translations = {
         footerMadeWith: "Made by",
         footerName: "Khaled Abderrahmène Habouche",
         footerDua: "لا تنسونا من صالح دعائكم",
-        footerRights: "All rights reserved."
+        footerRights: "All rights reserved.",
+        cancelGeneration: "Cancel",
+        generationCancelled: "Generation cancelled. You can try again."
     },
     fr: {
         appTitle: "Créer des Vidéos Coraniques",
@@ -129,7 +131,9 @@ export const translations = {
         footerMadeWith: "Créé par",
         footerName: "Khaled Abderrahmène Habouche",
         footerDua: "لا تنسونا من صالح دعائكم",
-        footerRights: "Tous droits réservés."
+        footerRights: "Tous droits réservés.",
+        cancelGeneration: "Annuler",
+        generationCancelled: "Génération annulée. Vous pouvez réessayer."
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -195,6 +199,8 @@ export const translations = {
         footerMadeWith: "صُنع بواسطة",
         footerName: "خالد عبد الرحمن حبوش",
         footerDua: "لا تنسونا من صالح دعائكم",
-        footerRights: "جميع الحقوق محفوظة."
+        footerRights: "جميع الحقوق محفوظة.",
+        cancelGeneration: "إلغاء",
+        generationCancelled: "تم إلغاء الإنشاء. يمكنك المحاولة مرة أخرى."
     }
 };

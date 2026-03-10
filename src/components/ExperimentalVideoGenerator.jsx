@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2 } from "lucide-react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2, XCircle } from "lucide-react";
 import { Audio } from "react-loader-spinner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,6 +40,58 @@ const ExperimentalVideoGenerator = () => {
     const [statusMessage, setStatusMessage] = useState("");
     const [showPermissionDialog, setShowPermissionDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState(null);
+    const [showCancel, setShowCancel] = useState(false);
+
+    // Ref to track the active EventSource so we can close it on cancel
+    const eventSourceRef = useRef(null);
+    // Ref to track stuck progress detection
+    const lastProgressRef = useRef({ value: 0, timestamp: Date.now() });
+    const stuckTimerRef = useRef(null);
+
+    // Detect when progress is stuck at the same value for 60+ seconds
+    useEffect(() => {
+        if (!loading) {
+            setShowCancel(false);
+            if (stuckTimerRef.current) {
+                clearInterval(stuckTimerRef.current);
+                stuckTimerRef.current = null;
+            }
+            return;
+        }
+
+        stuckTimerRef.current = setInterval(() => {
+            const elapsed = Date.now() - lastProgressRef.current.timestamp;
+            if (elapsed > 60000 && loading) {
+                setShowCancel(true);
+            }
+        }, 5000);
+
+        return () => {
+            if (stuckTimerRef.current) {
+                clearInterval(stuckTimerRef.current);
+                stuckTimerRef.current = null;
+            }
+        };
+    }, [loading]);
+
+    // Update the stuck timer whenever progress changes
+    useEffect(() => {
+        lastProgressRef.current = { value: progress, timestamp: Date.now() };
+        setShowCancel(false);
+    }, [progress]);
+
+    const handleCancelGeneration = useCallback(() => {
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
+        setLoading(false);
+        setProgress(0);
+        setQueuePosition(null);
+        setStatusMessage("");
+        setShowCancel(false);
+        toast.info(t('generationCancelled'));
+    }, [t]);
 
     // NODE BACKEND URL (Hardcoded or Env)
     const NODE_API_URL = import.meta.env.VITE_NODE_API_URL || "http://localhost:5000";
@@ -195,6 +247,7 @@ const ExperimentalVideoGenerator = () => {
             // 2. Start SSE to track progress
             const progressEndpoint = `${NODE_API_URL}/api/v1/progress/${jobId}`;
             const eventSource = new EventSource(progressEndpoint);
+            eventSourceRef.current = eventSource;
 
             // Wrap SSE in a promise so we can await completion
             await new Promise((resolve, reject) => {
@@ -543,6 +596,17 @@ const ExperimentalVideoGenerator = () => {
                                         </p>
                                         <Progress value={progress} className="w-full h-2 bg-primary/20" />
                                         <p className="text-xs text-muted-foreground">{progress}%</p>
+                                        {showCancel && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="mt-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={handleCancelGeneration}
+                                            >
+                                                <XCircle className="mr-1 h-4 w-4" />
+                                                {t('cancelGeneration')}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             ) : videoUrl ? (

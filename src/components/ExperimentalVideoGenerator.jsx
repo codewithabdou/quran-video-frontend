@@ -56,9 +56,52 @@ const ExperimentalVideoGenerator = () => {
 
     // Ref to track the active EventSource so we can close it on cancel
     const eventSourceRef = useRef(null);
+    const loadingRef = useRef(loading); // Track loading state without stale closures in listeners
     // Ref to track stuck progress detection
     const lastProgressRef = useRef({ value: 0, timestamp: Date.now() });
     const stuckTimerRef = useRef(null);
+
+    // Keep loadingRef in sync with loading state
+    useEffect(() => {
+        loadingRef.current = loading;
+    }, [loading]);
+
+    // Handle beforeunload (tab close/refresh) and unmount
+    useEffect(() => {
+        const handleUnload = () => {
+            if (loadingRef.current) {
+                // We use sendBeacon or a fire-and-forget fetch to cancel the job reliably during unload
+                try {
+                    const cancelUrl = `${NODE_API_URL}/api/v1/generate-video/cancel`;
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon(cancelUrl);
+                    } else {
+                        fetch(cancelUrl, { method: 'DELETE', keepalive: true }).catch(() => {});
+                    }
+                } catch (e) {
+                    console.error("Failed to send cancel signal on unload", e);
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', handleUnload);
+
+        // Cleanup on unmount
+        return () => {
+            window.removeEventListener('beforeunload', handleUnload);
+            // If the component unmounts while still loading, cancel the job
+            // NOTE: We do not trigger handleUnload() directly here because normal unmounts
+            // in React (like strict mode) shouldn't arbitrarily kill backend processes if
+            // the user is just navigating, but in our case, navigating away from the generator
+            // *should* cancel it to save resources.
+            if (loadingRef.current) {
+                 fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true }).catch(() => {});
+            }
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+            }
+        };
+    }, []);
 
     // Detect when progress is stuck at the same value for 60+ seconds
     useEffect(() => {
@@ -106,6 +149,7 @@ const ExperimentalVideoGenerator = () => {
     }, [t]);
 
     // NODE BACKEND URL (Hardcoded or Env)
+    // NOTE: Hardcoded value for NODE_API_URL initialized outside the component to avoid dependency issues in hooks
     const NODE_API_URL = import.meta.env.VITE_NODE_API_URL || "http://localhost:5000";
     const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
@@ -328,6 +372,8 @@ const ExperimentalVideoGenerator = () => {
                 toast.info(t('generationCancelled'));
             } else if (['errorConnectionLost', 'errorGenerationTimeout', 'errorGenerationFailed'].includes(err.message)) {
                 toast.error(t(err.message));
+                // Automatically request cancellation if we disconnected unintentionally
+                fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true }).catch(() => {});
             } else if (err.response?.status === 429 && err.response?.data?.error?.existingJobId) {
                 // If they hit the concurrency limiter (has an active job), open the cancel dialog
                 setShowActiveJobDialog(true);

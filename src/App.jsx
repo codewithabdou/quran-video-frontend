@@ -10,6 +10,7 @@ import Footer from "./components/Footer";
 // Lazy load route components for better performance
 const LandingPage = lazy(() => import("./components/LandingPage"));
 const ExperimentalVideoGenerator = lazy(() => import("./components/ExperimentalVideoGenerator"));
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 
 // Loading fallback component with translation support
 const LoadingFallback = () => {
@@ -38,6 +39,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/generate" element={<ExperimentalVideoGenerator />} />
+                <Route path="/experimental-admin" element={<AdminDashboard />} />
               </Routes>
             </Suspense>
             <Footer />

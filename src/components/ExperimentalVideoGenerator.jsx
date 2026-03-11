@@ -135,18 +135,7 @@ const ExperimentalVideoGenerator = () => {
         setShowCancel(false);
     }, [progress]);
 
-    const handleCancelGeneration = useCallback(() => {
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
-        }
-        setLoading(false);
-        setProgress(0);
-        setQueuePosition(null);
-        setStatusMessage("");
-        setShowCancel(false);
-        toast.info(t('generationCancelled'));
-    }, [t]);
+    // Removed unused handleCancelGeneration method
 
     // NODE BACKEND URL (Hardcoded or Env)
     // NOTE: Hardcoded value for NODE_API_URL initialized outside the component to avoid dependency issues in hooks
@@ -700,7 +689,7 @@ const ExperimentalVideoGenerator = () => {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="mt-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                onClick={handleCancelGeneration}
+                                                onClick={() => setShowActiveJobDialog(true)}
                                             >
                                                 <XCircle className="mr-1 h-4 w-4" />
                                                 {t('cancelGeneration')}

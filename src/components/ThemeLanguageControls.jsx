@@ -1,7 +1,10 @@
 import React from 'react';
 import { Moon, Sun, Globe, BookOpen, Home } from 'lucide-react';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import LoginButton from './LoginButton';
+import UserMenu from './UserMenu';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,6 +15,7 @@ import { Button } from "@/components/ui/button";
 
 const ThemeLanguageControls = () => {
     const { language, setLanguage, setTheme, t } = useThemeLanguage();
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -21,8 +25,16 @@ const ThemeLanguageControls = () => {
         { code: 'ar', label: 'العربية', flag: '🇸🇦' }
     ];
 
+    // Don't show auth controls on callback page
+    const isCallbackPage = location.pathname === '/auth/callback';
+
     return (
-        <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <div className="absolute top-4 right-4 z-50 flex gap-2 items-center">
+            {/* Auth Controls */}
+            {!isCallbackPage && !authLoading && (
+                isAuthenticated ? <UserMenu /> : <LoginButton />
+            )}
+
             {/* Route Navigation */}
             {location.pathname === '/generate' ? (
                 <Button

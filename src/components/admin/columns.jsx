@@ -13,15 +13,15 @@ const getStatusBadgeColor = (status) => {
     }
 };
 
-export const getColumns = (handleCancelClick, cancelingJobId) => [
+export const getColumns = (handleCancelClick, cancelingJobId, t) => [
   {
     accessorKey: "status",
-    header: "Status",
+    header: t("status"),
     cell: ({ row }) => {
       const status = row.getValue("status")
       return (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeColor(status)}`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {t(`status_${status}`) || status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       )
     },
@@ -36,7 +36,7 @@ export const getColumns = (handleCancelClick, cancelingJobId) => [
           className="p-0 hover:bg-transparent"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Job ID
+          {t("jobId")}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
@@ -48,7 +48,7 @@ export const getColumns = (handleCancelClick, cancelingJobId) => [
   },
   {
     accessorKey: "details",
-    header: "Details",
+    header: t("details"),
     cell: ({ row }) => {
         const data = row.original.data;
         if (!data) return <span className="text-muted-foreground">-</span>;
@@ -56,10 +56,10 @@ export const getColumns = (handleCancelClick, cancelingJobId) => [
         return (
             <div className="text-sm space-y-1">
                 <div>
-                    Surah {data.surah} ({data.ayah_start}-{data.ayah_end})
+                    {t("surah")} {data.surah} ({data.ayah_start}-{data.ayah_end})
                 </div>
                 <div className="text-xs text-muted-foreground">
-                    {data.platform || 'reel'} • {data.resolution || '720'}p
+                    {t(`platform${data.platform?.charAt(0).toUpperCase()}${data.platform?.slice(1)}`) || data.platform || 'reel'} • {data.resolution || '720'}p
                 </div>
             </div>
         )
@@ -67,7 +67,7 @@ export const getColumns = (handleCancelClick, cancelingJobId) => [
   },
   {
     accessorKey: "clientIp",
-    header: "IP",
+    header: t("ip"),
     cell: ({ row }) => {
         const ip = row.getValue("clientIp") || 'Unknown'
         return <code className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{ip}</code>
@@ -82,7 +82,7 @@ export const getColumns = (handleCancelClick, cancelingJobId) => [
                 className="p-0 hover:bg-transparent"
                 onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
-                Time
+                {t("time")}
                 <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         </div>
@@ -95,7 +95,7 @@ export const getColumns = (handleCancelClick, cancelingJobId) => [
   },
   {
     id: "actions",
-    header: () => <div className="text-right">Actions</div>,
+    header: () => <div className="text-right">{t("actions")}</div>,
     cell: ({ row }) => {
       const job = row.original
       const isActive = job.status === 'active' || job.status === 'waiting';

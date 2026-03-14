@@ -1,6 +1,20 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 /**
+ * Get auth headers from localStorage
+ */
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('auth_token');
+    const headers = {
+        "Content-Type": "application/json",
+    };
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+};
+
+/**
  * Queue a video generation job
  * Returns { jobId, status } immediately — does NOT wait for the video
  */
@@ -8,9 +22,7 @@ export const generateVideo = async (data) => {
     try {
         const response = await fetch(`${API_BASE_URL}/generate-video`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(data),
         });
 
@@ -33,7 +45,9 @@ export const generateVideo = async (data) => {
  */
 export const downloadVideo = async (jobId) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/download/${jobId}`);
+        const response = await fetch(`${API_BASE_URL}/download/${jobId}`, {
+            headers: getAuthHeaders(),
+        });
 
         if (response.status === 404) {
             throw new Error("Video is still processing. Please wait.");

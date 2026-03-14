@@ -1,8 +1,51 @@
 self.addEventListener('push', function (event) {
-    if (event.data) {
-        const data = event.data.json();
+    console.log('[SW] Push event received');
+    
+    // Immediate heartbeat to main window for debugging
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then(windowClients => {
+                windowClients.forEach(client => {
+                    client.postMessage({ type: 'PUSH_HEARTBEAT', timestamp: Date.now() });
+                });
+            })
+    );
+
+    let data;
+    try {
+        data = event.data ? event.data.json() : null;
+    } catch (e) {
+        console.error('[SW] Failed to parse push data:', e);
+        // Show a fallback notification with raw text
+        const rawText = event.data ? event.data.text() : 'New notification';
+        event.waitUntil(
+            self.registration.showNotification('Quran Video Generator', {
+                body: rawText,
+                icon: '/vite.svg',
+                badge: '/vite.svg',
+            })
+        );
+        return;
+    }
+
+    if (data) {
+        console.log('[SW] Push data:', JSON.stringify(data));
+        
+        // Notify all clients (open windows) about the push event for easier debugging
+        event.waitUntil(
+            clients.matchAll({ type: 'window', includeUncontrolled: true })
+                .then(windowClients => {
+                    windowClients.forEach(client => {
+                        client.postMessage({
+                            type: 'PUSH_RECEIVED',
+                            payload: data
+                        });
+                    });
+                })
+        );
+
         const options = {
-            body: data.body,
+            body: data.body || 'Your video is ready!',
             icon: data.icon || '/vite.svg',
             badge: '/vite.svg',
             vibrate: [100, 50, 100],
@@ -12,7 +55,18 @@ self.addEventListener('push', function (event) {
             }
         };
         event.waitUntil(
-            self.registration.showNotification(data.title, options)
+            self.registration.showNotification(data.title || 'Quran Video Generator', options)
+                .then(() => console.log('[SW] Notification displayed successfully'))
+                .catch(err => console.error('[SW] Failed to show notification:', err))
+        );
+    } else {
+        console.log('[SW] Push event had no data, showing default notification');
+        event.waitUntil(
+            self.registration.showNotification('Quran Video Generator', {
+                body: 'You have a new update!',
+                icon: '/vite.svg',
+                badge: '/vite.svg',
+            })
         );
     }
 });

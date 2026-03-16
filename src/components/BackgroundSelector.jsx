@@ -70,9 +70,12 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center p-8 bg-card/50 rounded-xl border border-dashed border-border">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">{t('loadingBackgrounds') || "Loading backgrounds..."}</span>
+            <div className="flex flex-col items-center justify-center p-12 bg-card/40 rounded-[2rem] border border-dashed border-primary/10 transition-all duration-500">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
+                    <Loader2 className="w-10 h-10 animate-spin text-primary relative z-10" />
+                </div>
+                <span className="mt-4 text-sm font-medium text-muted-foreground tracking-wide animate-pulse">{t('summoningBackgrounds')}</span>
             </div>
         );
     }
@@ -80,12 +83,12 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
     // If no videos loaded, show info message (not an error)
     if (videos.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="text-sm font-medium">{t('backgroundUnavailable')}</span>
+            <div className="flex flex-col items-center justify-center p-8 bg-sacred-cream/30 dark:bg-sacred-obsidian/30 rounded-[2rem] border border-primary/5">
+                <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-primary/40" />
                 </div>
-                <p className="text-xs text-blue-600 dark:text-blue-500 text-center">
+                <h3 className="text-sm font-bold text-foreground mb-1 uppercase tracking-wider">{t('backgroundUnavailable')}</h3>
+                <p className="text-xs text-muted-foreground text-center leading-relaxed max-w-[200px]">
                     {t('backgroundUnavailableDesc')}
                 </p>
             </div>
@@ -94,22 +97,13 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
     return (
         <div className={cn("w-full", className)}>
-            <div className="relative w-full px-8">
-                {/* px-8 provides space for navigation arrows */}
+            <div className="relative w-full">
                 <Swiper
                     modules={[Navigation]}
                     navigation
-                    spaceBetween={16}
+                    spaceBetween={20}
                     slidesPerView={1}
-                    breakpoints={{
-                        640: {
-                            slidesPerView: 1,
-                        },
-                        1024: {
-                            slidesPerView: 1,
-                        },
-                    }}
-                    className={cn("w-full py-4", platform !== 'youtube' && "max-w-xs mx-auto")}
+                    className={cn("w-full py-2", platform !== 'youtube' && "max-w-[280px] mx-auto")}
                 >
                     {videos.map((video) => {
                         const videoLink = getBestVideoLink(video);
@@ -117,43 +111,42 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
                         return (
                             <SwiperSlide key={video.id}>
-                                <div className="p-1">
-                                    <Card
+                                <div className="p-2">
+                                    <div
                                         className={cn(
-                                            "cursor-pointer transition-all duration-300 hover:scale-105 border-2 relative overflow-hidden group",
-                                            isSelected ? "border-primary shadow-lg shadow-primary/20 scale-105" : "border-transparent opacity-80 hover:opacity-100"
+                                            "cursor-pointer group relative overflow-hidden rounded-[2.5rem] transition-all duration-500",
+                                            isSelected ? "ring-4 ring-primary ring-offset-4 ring-offset-background scale-[0.98] shadow-2xl shadow-primary/20" : "hover:scale-[1.02]"
                                         )}
                                         onClick={() => onChange(videoLink)}
                                     >
-                                        <CardContent className={cn(
-                                            "flex items-center justify-center p-0 relative",
+                                        <div className={cn(
+                                            "relative w-full overflow-hidden flex items-center justify-center",
                                             platform === 'youtube' ? "aspect-[16/9]" : "aspect-[9/16]"
                                         )}>
                                             <img
                                                 src={video.image}
                                                 alt={video.user.name}
-                                                className="w-full h-full object-cover"
+                                                className={cn(
+                                                    "w-full h-full object-cover transition-transform duration-700",
+                                                    isSelected ? "scale-110" : "group-hover:scale-105"
+                                                )}
                                                 loading="lazy"
                                                 decoding="async"
                                             />
 
-                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-
-                                            {/* Selection Indicator */}
+                                            {/* Gradient Overlays */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                                            
+                                            {/* Selection Visuals */}
                                             {isSelected && (
-                                                <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-primary text-primary-foreground rounded-full p-1 shadow-md animate-in zoom-in">
-                                                    <Check className="w-3 h-3 md:w-4 md:h-4" />
+                                                <div className="absolute inset-0 bg-primary/10 transition-all duration-500 flex items-center justify-center">
+                                                    <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-2xl animate-in zoom-in slide-in-from-bottom-2 duration-500">
+                                                        <Check className="w-8 h-8" strokeWidth={3} />
+                                                    </div>
                                                 </div>
                                             )}
-
-                                            {/* User Credit */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                                                <p className="text-[10px] text-white/90 truncate">
-                                                    {t('by') || "By"} {video.user.name}
-                                                </p>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                    </div>
                                 </div>
                             </SwiperSlide>
                         );

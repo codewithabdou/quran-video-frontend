@@ -1,35 +1,38 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import ThemeLanguageControls from '../ThemeLanguageControls';
+import Navbar from '../Navbar';
 import { ThemeLanguageProvider } from '../../contexts/ThemeLanguageContext';
+import { AuthProvider } from '../../contexts/AuthContext';
 
 // Helper to render component with required providers
 const renderWithProviders = (component) => {
     return render(
         <BrowserRouter>
             <ThemeLanguageProvider>
-                {component}
+                <AuthProvider>
+                    {component}
+                </AuthProvider>
             </ThemeLanguageProvider>
         </BrowserRouter>
     );
 };
 
-describe('ThemeLanguageControls', () => {
+describe('Navbar', () => {
     it('should render without crashing', () => {
-        renderWithProviders(<ThemeLanguageControls />);
+        renderWithProviders(<Navbar />);
         expect(screen.getByRole('button', { name: /toggle theme/i })).toBeInTheDocument();
     });
 
     it('should render language selector button', () => {
-        renderWithProviders(<ThemeLanguageControls />);
+        renderWithProviders(<Navbar />);
         expect(screen.getByRole('button', { name: /switch language/i })).toBeInTheDocument();
     });
 
-    it('should render navigation button', () => {
-        renderWithProviders(<ThemeLanguageControls />);
-        // Should render either Home or BookOpen button depending on route
-        const buttons = screen.getAllByRole('button');
-        expect(buttons.length).toBeGreaterThan(0);
+    it('should render navigation links', () => {
+        renderWithProviders(<Navbar />);
+        // By default should have Home and Generator link
+        expect(screen.getByText(/Home/i)).toBeInTheDocument();
+        expect(screen.getByText(/Generator/i)).toBeInTheDocument();
     });
 });

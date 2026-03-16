@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2, XCircle } from "lucide-react";
+import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2, XCircle, Zap, Smartphone } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Audio } from "react-loader-spinner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -135,6 +136,25 @@ const ExperimentalVideoGenerator = () => {
         setShowCancel(false);
     }, [progress]);
 
+    // Listen for messages from Service Worker (for push debugging)
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) return;
+
+        const handleMessage = (event) => {
+            if (event.data && event.data.type === 'PUSH_RECEIVED') {
+                console.log('%c[Push Received via SW Message] %o', 'color: #27b059; font-weight: bold;', event.data.payload);
+                toast.info(`Push notification received: ${event.data.payload.title || 'Ready'}`);
+            } else if (event.data && event.data.type === 'PUSH_HEARTBEAT') {
+                console.log('%c[SW Heartbeat] Push event just woke up the Service Worker! Check your system notifications.', 'color: #3b82f6; font-weight: italic;');
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', handleMessage);
+        return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+    }, []);
+
+    // Removed handleTestNotification method as requested after successful verification
+
     // Removed unused handleCancelGeneration method
 
     // NODE BACKEND URL (Hardcoded or Env)
@@ -157,32 +177,54 @@ const ExperimentalVideoGenerator = () => {
     }
 
     const subscribeToPush = async (requestId) => {
-        if (!VAPID_PUBLIC_KEY) return;
-        if (!('serviceWorker' in navigator)) return;
+        if (!VAPID_PUBLIC_KEY) {
+            console.warn("[Push] No VAPID_PUBLIC_KEY configured. Skipping push subscription.");
+            return null;
+        }
+        if (!('serviceWorker' in navigator)) {
+            console.warn("[Push] Service workers not supported in this browser.");
+            return null;
+        }
+        if (!('PushManager' in window)) {
+            console.warn("[Push] Push API not supported in this browser.");
+            return null;
+        }
 
         try {
             const register = await navigator.serviceWorker.register('/sw.js');
+            console.log("[Push] Service worker registered, scope:", register.scope);
 
             // Wait for service worker to be ready
             await navigator.serviceWorker.ready;
+            console.log("[Push] Service worker is ready");
 
-            let subscription = await register.pushManager.getSubscription();
-
-            if (!subscription) {
-                subscription = await register.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
+            // Always unsubscribe existing and create a fresh subscription
+            // This ensures we never send a stale subscription to the backend
+            let existingSubscription = await register.pushManager.getSubscription();
+            if (existingSubscription) {
+                console.log("[Push] Found existing subscription, unsubscribing for fresh one...");
+                await existingSubscription.unsubscribe();
             }
 
-            // Send to backend
+            const subscription = await register.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+
+            console.log("[Push] New subscription created:");
+            console.log("[Push]   Endpoint:", subscription.endpoint);
+            console.log("[Push]   Keys present:", !!subscription.toJSON().keys);
+
+            // Send to backend using axios withCredentials
             await axios.post(`${NODE_API_URL}/api/v1/subscribe`, {
                 requestId,
-                subscription
-            });
-            console.log("Subscribed to push notifications for", requestId);
+                subscription: subscription.toJSON()
+            }, { withCredentials: true });
+            console.log("[Push] Subscription sent to backend for", requestId);
+            return subscription.toJSON();
         } catch (e) {
-            console.error("Push subscription failed:", e);
+            console.error("[Push] Push subscription failed:", e);
+            return null;
         }
     };
 
@@ -199,6 +241,8 @@ const ExperimentalVideoGenerator = () => {
         },
     });
 
+    const selectedPlatform = form.watch('platform');
+
     const startGeneration = async (data) => {
         setLoading(true);
         setVideoUrl(null);
@@ -210,7 +254,7 @@ const ExperimentalVideoGenerator = () => {
         const requestId = crypto.randomUUID();
 
         // Subscribe to notifications BEFORE starting generation
-        subscribeToPush(requestId);
+        const subscription = await subscribeToPush(requestId);
 
         try {
             let finalBackgroundUrl = data.background_url;
@@ -231,7 +275,7 @@ const ExperimentalVideoGenerator = () => {
                     // 1. Ask the backend if it already has this Pexels ID cached in its uploads directory
                     const checkResponse = await axios.post(`${NODE_API_URL}/api/v1/check-background`, {
                         id: pexelsId
-                    });
+                    }, { withCredentials: true });
 
                     if (checkResponse.data.exists) {
                         // Cache HIT! Instant generation.
@@ -256,7 +300,8 @@ const ExperimentalVideoGenerator = () => {
                         // Upload to our Node backend
                         setStatusMessage("uploading_background_to_server");
                         const uploadResponse = await axios.post(`${NODE_API_URL}/api/v1/upload-background`, formData, {
-                            headers: { "Content-Type": "multipart/form-data" }
+                            headers: { "Content-Type": "multipart/form-data" },
+                            withCredentials: true
                         });
 
                         // Override the payload to tell the backend to use the local saved file path
@@ -271,8 +316,9 @@ const ExperimentalVideoGenerator = () => {
             }
 
             setStatusMessage("status_queued");
+            console.log("[Frontend] Enqueuing job", requestId, "...");
 
-            // 1. Queue the video generation job (returns immediately)
+            // 1. Queue the video generation job (reverted to axios withCredentials)
             const queueResponse = await axios.post(`${NODE_API_URL}/api/v1/generate-video`, {
                 ...data,
                 surah: parseInt(data.surah),
@@ -282,11 +328,13 @@ const ExperimentalVideoGenerator = () => {
                 reciter_id: data.reciter_id,
                 translation_id: "en.sahih",
                 request_id: requestId,
-                background_url: finalBackgroundUrl, // Send the localized upload path or the original
-                platform: data.platform
-            });
+                background_url: finalBackgroundUrl,
+                platform: data.platform,
+                subscription: subscription
+            }, { withCredentials: true });
 
             const jobId = queueResponse.data.jobId;
+            console.log("[Frontend] Job enqueued successfully. Job ID:", jobId);
             setStatusMessage("status_queued");
 
             // 2. Start SSE to track progress
@@ -312,7 +360,7 @@ const ExperimentalVideoGenerator = () => {
                         } else if (payload.error) {
                             console.error("Backend generation error:", payload.error);
                             eventSource.close();
-                            reject(new Error('errorGenerationFailed'));
+                            reject(new Error(payload.error));
                         } else if (payload.percentage !== undefined) {
                             setProgress(payload.percentage);
                             setStatusMessage(payload.status);
@@ -343,13 +391,16 @@ const ExperimentalVideoGenerator = () => {
                 // in the `finally` block or let the UI reset it.
             });
 
-            // 3. Download the completed video
+            // 3. Download the completed video using fetch to bypass Axios/DevTools blob bug
             setStatusMessage("status_downloading");
-            const videoResponse = await axios.get(`${NODE_API_URL}/api/v1/download/${jobId}`, {
-                responseType: 'blob'
+            console.log("[Frontend] Downloading final video...");
+            const videoResponse = await fetch(`${NODE_API_URL}/api/v1/download/${jobId}`, {
+                credentials: 'include'
             });
-
-            const url = URL.createObjectURL(videoResponse.data);
+            if (!videoResponse.ok) throw new Error("Failed to download video");
+            
+            const videoData = await videoResponse.blob();
+            const url = URL.createObjectURL(videoData);
             setVideoUrl(url);
             toast.success(t('videoGeneratedSuccess'));
 
@@ -362,19 +413,39 @@ const ExperimentalVideoGenerator = () => {
             } else if (['errorConnectionLost', 'errorGenerationTimeout', 'errorGenerationFailed'].includes(err.message)) {
                 toast.error(t(err.message));
                 // Automatically request cancellation if we disconnected unintentionally
-                fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true }).catch(() => {});
+                fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true, credentials: 'include' }).catch(() => {});
             } else if (err.response?.status === 429 && err.response?.data?.error?.existingJobId) {
                 // If they hit the concurrency limiter (has an active job), open the cancel dialog
                 setShowActiveJobDialog(true);
             } else {
                 // Determine standard error message
                 let errorMsg = t('errorSomethingWentWrong');
-                if (err.response?.data?.error) {
-                    const apiErr = err.response.data.error;
-                    errorMsg = typeof apiErr === 'string' ? apiErr : apiErr.message || JSON.stringify(apiErr);
-                } else if (err.message) {
-                    errorMsg = err.message;
+                
+                // If it's an error from our backend, it might be a translation key with params (e.g., key|param)
+                const apiError = err.response?.data?.error;
+                const rawErrorString = typeof apiError === 'object' ? apiError.message : (apiError || err.message);
+
+                if (typeof rawErrorString === 'string') {
+                    const [key, param] = rawErrorString.split('|');
+                    
+                    // Check if the key exists in our translations
+                    const translated = t(key);
+                    if (translated !== key) {
+                        // It's a valid key
+                        if (key === 'error_duration_limit') {
+                            errorMsg = translated.replace('{{duration}}', param);
+                        } else if (key === 'error_rate_limit') {
+                            errorMsg = translated.replace('{{limit}}', param);
+                        } else {
+                            errorMsg = translated;
+                        }
+                    } else if (typeof apiError === 'object' && apiError.message) {
+                        errorMsg = apiError.message;
+                    } else if (err.message) {
+                        errorMsg = err.message;
+                    }
                 }
+                
                 toast.error(errorMsg);
             }
         } finally {
@@ -448,96 +519,90 @@ const ExperimentalVideoGenerator = () => {
     };
 
     return (
-        <div className="relative min-h-screen pt-8 w-full overflow-hidden bg-background font-sans selection:bg-primary/30" dir={dir}>
+        <div className="relative min-h-screen pt-12 w-full overflow-hidden bg-background font-sans selection:bg-primary/20" dir={dir}>
+            {/* Ambient Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-[10%] left-[10%] w-[30%] h-[30%] rounded-full bg-primary/5 blur-[100px]"></div>
-                <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]"></div>
+                <div className="absolute top-[5%] right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] animate-pulse duration-[12s]"></div>
+                <div className="absolute bottom-[10%] left-[5%] w-[35%] h-[35%] rounded-full bg-sacred-terracotta/5 blur-[100px] animate-pulse duration-[18s] delay-700"></div>
+                <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
             </div>
 
-            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
-                <div className="w-full max-w-2xl flex flex-col gap-8">
+            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-16">
+                <div className="w-full max-w-4xl flex flex-col gap-12">
 
-                    {/* Left: Input Form */}
-                    <Card className="border-border bg-card/50 backdrop-blur-xl shadow-xl">
-                        <CardHeader>
-                            <CardTitle className="text-3xl font-bold text-foreground flex items-center gap-2">
-                                <BookOpen className="w-8 h-8 text-primary" />
-                                {t('appTitle')}
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground text-base">
-                                {t('appDescription')}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
+                    {/* Header Section */}
+                    <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+                        <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tight text-foreground">
+                            {t('appTitle')}
+                        </h1>
+                        <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
+                            {t('appDescription')}
+                        </p>
+                    </div>
 
-                                        <FormField
-                                            control={form.control}
-                                            name="surah"
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-2">
-                                                    <FormLabel className="text-foreground">{t('surah')}</FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
-                                                                <SelectValue placeholder={t('selectSurah')} />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent className="bg-popover border-border text-popover-foreground max-h-[300px]">
-                                                            {SURAHS.map((surah) => (
-                                                                <SelectItem key={surah.number} value={String(surah.number)}>
-                                                                    {surah.number}. {language === 'ar' ? surah.arabicName : surah.name} {language !== 'ar' && `- ${surah.englishName}`}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <FormField
-                                            control={form.control}
-                                            name="platform"
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-2">
-                                                    <FormLabel className="text-foreground">{t('platform')}</FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
-                                                                <SelectValue placeholder={t('selectPlatform')} />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                            <SelectItem value="reel">{t('platformReel')}</SelectItem>
-                                                            <SelectItem value="youtube">{t('platformYoutube')}</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <div className="col-span-2">
+                    <div className="flex flex-col gap-12 items-center w-full max-w-4xl mx-auto">
+                        {/* Form Section */}
+                        <Card className="w-full p-2 border-none bg-card shadow-2xl shadow-black/5 animate-in fade-in slide-in-from-left-8 duration-1000 delay-100">
+                            <CardContent className="p-8">
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                        
+                                        {/* Surah & Platform Row */}
+                                        <div className="grid sm:grid-cols-2 gap-6">
                                             <FormField
                                                 control={form.control}
-                                                name="resolution"
+                                                name="surah"
                                                 render={({ field }) => (
-                                                    <FormItem className="space-y-2">
-                                                        <FormLabel className="text-foreground">{t('resolution')}</FormLabel>
+                                                    <FormItem className="space-y-3">
+                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('surah')}</FormLabel>
                                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                             <FormControl>
-                                                                <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
-                                                                    <SelectValue placeholder={t('selectResolution')} />
+                                                                <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
+                                                                    <SelectValue placeholder={t('selectSurah')} />
                                                                 </SelectTrigger>
                                                             </FormControl>
-                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                <SelectItem value="360">{t('res360')}</SelectItem>
-                                                                <SelectItem value="480">{t('res480')}</SelectItem>
-                                                                <SelectItem value="720">{t('res720')}</SelectItem>
-                                                                <SelectItem value="1080">{t('res1080')}</SelectItem>
+                                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl max-h-[400px]">
+                                                                {SURAHS.map((surah) => (
+                                                                    <SelectItem key={surah.number} value={String(surah.number)} className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
+                                                                        <div className="flex items-center justify-between w-full gap-4">
+                                                                            <span className="text-xs font-bold w-6 h-6 flex items-center justify-center bg-muted rounded-full group-hover:bg-primary/20 transition-colors">{surah.number}</span>
+                                                                            <span className="flex-1 font-medium">{language === 'ar' ? surah.arabicName : surah.name} {language !== 'ar' && `- ${surah.englishName}`}</span>
+                                                                            <span className="font-arabic text-lg text-primary/60">{surah.arabicName}</span>
+                                                                        </div>
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="platform"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-3">
+                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('platform')}</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
+                                                                    <SelectValue placeholder={t('selectPlatform')} />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl">
+                                                                <SelectItem value="reel" className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Smartphone className="w-4 h-4" />
+                                                                        <span>{t('platformReel')}</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="youtube" className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Video className="w-4 h-4" />
+                                                                        <span>{t('platformYoutube')}</span>
+                                                                    </div>
+                                                                </SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                         <FormMessage />
@@ -545,245 +610,274 @@ const ExperimentalVideoGenerator = () => {
                                                 )}
                                             />
                                         </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="ayah_start"
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-2">
-                                                    <FormLabel className="text-foreground">{t('startAyah')}</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            min="1"
-                                                            {...field}
-                                                            className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground"
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        {/* Ayah Range Row */}
+                                        <div className="grid grid-cols-2 gap-6 p-6 rounded-3xl bg-muted/20 border border-border/5">
+                                            <FormField
+                                                control={form.control}
+                                                name="ayah_start"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-3">
+                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('startAyah')}</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                {...field}
+                                                                className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                                        <FormField
-                                            control={form.control}
-                                            name="ayah_end"
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-2">
-                                                    <FormLabel className="text-foreground">{t('endAyah')}</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            min="1"
-                                                            {...field}
-                                                            className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground"
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
+                                            <FormField
+                                                control={form.control}
+                                                name="ayah_end"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-3">
+                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('endAyah')}</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                {...field}
+                                                                className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
 
-                                    {/* Background Selector */}
-                                    <FormField
-                                        control={form.control}
-                                        name="background_url"
-                                        render={({ field }) => (
-                                            <FormItem className="space-y-2">
-                                                <FormLabel className="text-foreground">{t('selectBackground')}</FormLabel>
-                                                <FormControl>
-                                                    <BackgroundSelector
-                                                        value={field.value}
-                                                        onChange={field.onChange}
-                                                        platform={form.watch('platform')}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                        {/* Background Selector & Resolution Row */}
+                                        <div className="space-y-6">
+                                            <FormField
+                                                control={form.control}
+                                                name="background_url"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-3">
+                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('selectBackground')}</FormLabel>
+                                                        <FormControl>
+                                                            <BackgroundSelector
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                platform={form.watch('platform')}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                                    <FormField
-                                        control={form.control}
-                                        name="reciter_id"
-                                        render={({ field }) => (
-                                            <FormItem className="space-y-2">
-                                                <FormLabel className="text-foreground flex items-center gap-2">
-                                                    <AudioLines className="w-4 h-4" /> {t('reciter')}
-                                                </FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="bg-background/50 border-input focus:border-primary focus:ring-primary/20 text-foreground">
-                                                            <SelectValue placeholder={t('selectReciter')} />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="bg-popover border-border text-popover-foreground max-h-[300px]">
-                                                        {RECITERS.map((reciter) => (
-                                                            <SelectItem key={reciter.id} value={reciter.id}>
-                                                                {language === 'ar' && reciter.arabicName ? reciter.arabicName : reciter.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                            <div className="grid sm:grid-cols-2 gap-6">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="reciter_id"
+                                                    render={({ field }) => (
+                                                        <FormItem className="space-y-3">
+                                                            <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80 flex items-center gap-2">
+                                                                <AudioLines className="w-4 h-4 text-primary" strokeWidth={2} /> {t('reciter')}
+                                                            </FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
+                                                                        <SelectValue placeholder={t('selectReciter')} />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent className="rounded-2xl border-border/10 shadow-2xl max-h-[300px]">
+                                                                    {RECITERS.map((reciter) => (
+                                                                        <SelectItem key={reciter.id} value={reciter.id} className="rounded-xl p-3">
+                                                                            <span className="font-medium">{language === 'ar' && reciter.arabicName ? reciter.arabicName : reciter.name}</span>
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
 
-                                    <Button
-                                        type="submit"
-                                        className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-lg shadow-primary/20 transition-all duration-300 transform hover:scale-[1.02]"
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                                {t('generating')}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <BookOpen className="mr-2 h-5 w-5" />
-                                                {t('generateBtn')}
-                                            </>
-                                        )}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="resolution"
+                                                    render={({ field }) => (
+                                                        <FormItem className="space-y-3">
+                                                            <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('resolution')}</FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
+                                                                        <SelectValue placeholder={t('selectResolution')} />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent className="rounded-2xl border-border/10 shadow-2xl">
+                                                                    <SelectItem value="360" className="rounded-xl">{t('res360')}</SelectItem>
+                                                                    <SelectItem value="480" className="rounded-xl">{t('res480')}</SelectItem>
+                                                                    <SelectItem value="720" className="rounded-xl">{t('res720')}</SelectItem>
+                                                                    <SelectItem value="1080" className="rounded-xl">{t('res1080')}</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
 
-                    {/* Right: Result / Preview */}
-                    <div className="flex flex-col gap-6">
-                        <Card className="h-full min-h-[500px] border-border bg-card/50 backdrop-blur-xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group">
-                            {/* Placeholder Pattern */}
-                            {!videoUrl && !loading && (
-                                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                            )}
-
-                            {loading ? (
-                                <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground w-3/4 max-w-sm">
-                                    <div className="flex justify-center items-center mb-4 min-h-[100px]">
-                                        <Audio
-                                            height="100"
-                                            width="100"
-                                            color="#27b059"
-                                            ariaLabel="audio-loading"
-                                            wrapperStyle={{}}
-                                            wrapperClass="wrapper-class"
-                                            visible={true}
-                                        />
-                                    </div>
-                                    <div className="w-full space-y-2 text-center">
-                                        <p className="font-medium text-foreground animate-pulse">
-                                            {statusMessage === 'status_queued' && queuePosition
-                                                ? t('status_queued_position').replace('{{position}}', queuePosition)
-                                                : statusMessage ? t(statusMessage) : t('status_processing_video')}
-                                        </p>
-                                        <Progress value={progress} className="w-full h-2 bg-primary/20" />
-                                        <p className="text-xs text-muted-foreground">{progress}%</p>
-                                        {showCancel && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="mt-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                onClick={() => setShowActiveJobDialog(true)}
-                                            >
-                                                <XCircle className="mr-1 h-4 w-4" />
-                                                {t('cancelGeneration')}
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : videoUrl ? (
-                                <div className="w-full h-full p-4 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
-                                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-border group-hover:border-primary/30 transition-colors">
-                                        <video
-                                            src={videoUrl}
-                                            controls
-                                            className="w-full h-full object-contain bg-black"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2 w-full">
                                         <Button
-                                            variant="outline"
-                                            className="flex-1 border-input hover:bg-accent hover:text-accent-foreground text-primary border-primary/20"
-                                            onClick={() => {
-                                                const values = form.getValues();
-                                                const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
-                                                const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
-                                                const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
-                                                const a = document.createElement("a");
-                                                a.href = videoUrl;
-                                                a.download = fileName;
-                                                document.body.appendChild(a);
-                                                a.click();
-                                                document.body.removeChild(a);
-                                            }}
+                                            type="submit"
+                                            className="w-full h-16 text-lg font-bold rounded-2xl shadow-2xl transition-all duration-500 hover:scale-[1.02] border-none group"
+                                            disabled={loading}
                                         >
-                                            <Download className="mr-2 h-4 w-4" />
-                                            {t('downloadBtn')}
+                                            {loading ? (
+                                                <div className="flex items-center gap-3">
+                                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                                    <span className="animate-pulse">{t('generating')}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-3">
+                                                    <Zap className="h-6 w-6 group-hover:scale-110 transition-transform fill-current" />
+                                                    <span>{t('generateBtn')}</span>
+                                                </div>
+                                            )}
                                         </Button>
-                                        <Button
-                                            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                            onClick={async () => {
-                                                try {
+                                    </form>
+                                </Form>
+                            </CardContent>
+                        </Card>
+
+                        {/* Result / Preview Section */}
+                        <div className="w-full flex flex-col gap-8 animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
+                            <Card className="h-full min-h-[500px] border-border bg-card/60 backdrop-blur-xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group rounded-[2rem]">
+                                {/* Placeholder Pattern */}
+                                {!videoUrl && !loading && (
+                                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                                )}
+
+                                {loading ? (
+                                    <div className="flex flex-col items-center gap-6 z-10 text-muted-foreground w-3/4 max-w-sm">
+                                        <div className="flex justify-center items-center mb-4 min-h-[100px]">
+                                            <Audio
+                                                height="80"
+                                                width="80"
+                                                color="hsl(var(--primary))"
+                                                ariaLabel="audio-loading"
+                                                visible={true}
+                                            />
+                                        </div>
+                                        <div className="w-full space-y-4 text-center">
+                                            <div className="space-y-2">
+                                                <p className="font-serif text-xl text-foreground font-medium animate-pulse">
+                                                    {statusMessage === 'status_queued' && queuePosition
+                                                        ? t('status_queued_position').replace('{{position}}', queuePosition)
+                                                        : statusMessage ? t(statusMessage) : t('status_processing_video')}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground tracking-wide uppercase font-bold">{progress}%</p>
+                                            </div>
+                                            <Progress value={progress} className="w-full h-1.5 bg-primary/10" />
+                                            
+                                            {showCancel && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="mt-4 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full"
+                                                    onClick={() => setShowActiveJobDialog(true)}
+                                                >
+                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                    {t('cancelGeneration')}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : videoUrl ? (
+                                    <div className="w-full h-full p-6 flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-700">
+                                        <div className={cn(
+                                            "relative w-full rounded-3xl overflow-hidden shadow-2xl border border-border/10 group-hover:border-primary/20 transition-all duration-500 bg-black",
+                                            selectedPlatform === 'youtube' ? 'aspect-video max-w-2xl' : 'aspect-[9/16] max-h-[700px]'
+                                        )}>
+                                            <video
+                                                src={videoUrl}
+                                                controls
+                                                className="w-full h-full object-contain"
+                                            />
+                                        </div>
+                                        <div className="flex gap-4 w-full">
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1 h-14 rounded-full border-primary/20 hover:bg-primary/5 text-primary font-bold"
+                                                onClick={() => {
                                                     const values = form.getValues();
                                                     const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
                                                     const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
                                                     const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
+                                                    const a = document.createElement("a");
+                                                    a.href = videoUrl;
+                                                    a.download = fileName;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                }}
+                                            >
+                                                <Download className="mr-2 h-5 w-5" />
+                                                {t('downloadBtn')}
+                                            </Button>
+                                            <Button
+                                                className="flex-1 h-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg shadow-primary/20"
+                                                onClick={async () => {
+                                                    try {
+                                                        const values = form.getValues();
+                                                        const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
+                                                        const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
+                                                        const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
 
-                                                    // Fetch the video blob from the object URL
-                                                    const response = await fetch(videoUrl);
-                                                    const blob = await response.blob();
-                                                    const file = new File([blob], fileName, { type: 'video/mp4' });
+                                                        const response = await fetch(videoUrl);
+                                                        const blob = await response.blob();
+                                                        const file = new File([blob], fileName, { type: 'video/mp4' });
 
-                                                    // Check if the browser supports sharing files
-                                                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                                        await navigator.share({
-                                                            title: `Quran - ${surahData ? surahData.name : 'Video'} (${values.ayah_start}-${values.ayah_end})`,
-                                                            files: [file],
-                                                        });
-                                                    } else if (navigator.share) {
-                                                        // Fallback: share URL if file sharing is not supported
-                                                        await navigator.share({
-                                                            title: `Quran - ${surahData ? surahData.name : 'Video'}`,
-                                                            text: 'Check out this video generated with Quran Video Generator!',
-                                                            url: window.location.href
-                                                        });
-                                                    } else {
-                                                        toast.error(t('shareNotSupported'));
+                                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                                            await navigator.share({
+                                                                title: `Quran - ${surahData ? surahData.name : 'Video'} (${values.ayah_start}-${values.ayah_end})`,
+                                                                files: [file],
+                                                            });
+                                                        } else if (navigator.share) {
+                                                            await navigator.share({
+                                                                title: `Quran - ${surahData ? surahData.name : 'Video'}`,
+                                                                text: 'Check out this video generated with Quran Video Generator!',
+                                                                url: window.location.href
+                                                            });
+                                                        } else {
+                                                            toast.error(t('shareNotSupported'));
+                                                        }
+                                                    } catch (err) {
+                                                        if (err.name !== 'AbortError') {
+                                                            console.error("Sharing failed:", err);
+                                                            toast.error(t('shareNotSupported'));
+                                                        }
                                                     }
-                                                } catch (err) {
-                                                    if (err.name !== 'AbortError') {
-                                                        console.error("Sharing failed:", err);
-                                                        toast.error(t('shareNotSupported'));
-                                                    }
-                                                }
-                                            }}
-                                        >
-                                            <Share2 className="mr-2 h-4 w-4" />
-                                            {t('shareBtn')}
-                                        </Button>
+                                                }}
+                                            >
+                                                <Share2 className="mr-2 h-5 w-5" />
+                                                {t('shareBtn')}
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-4 z-10 text-muted-foreground">
-                                    <div className="w-20 h-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-2 transition-transform duration-500">
-                                        <Video className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-6 z-10 text-muted-foreground p-8">
+                                        <div className="w-24 h-24 rounded-[2.5rem] bg-muted/30 flex items-center justify-center mb-4 transition-all duration-700 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+                                            <Video className="w-10 h-10 text-primary/40 group-hover:text-primary transition-colors duration-500" strokeWidth={1.5} />
+                                        </div>
+                                        <div className="text-center space-y-3">
+                                            <h3 className="text-2xl font-serif font-bold text-foreground">{t('previewTitle')}</h3>
+                                            <p className="text-muted-foreground leading-relaxed max-w-[280px]">{t('previewText')}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-medium text-foreground">{t('previewTitle')}</h3>
-                                        <p className="text-sm">{t('previewText')}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </Card>
+                                )}
+                            </Card>
+                        </div>
                     </div>
                 </div>
-
             </div>
 
 

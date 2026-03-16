@@ -71,14 +71,12 @@ const ExperimentalVideoGenerator = () => {
     useEffect(() => {
         const handleUnload = () => {
             if (loadingRef.current) {
-                // We use sendBeacon or a fire-and-forget fetch to cancel the job reliably during unload
+                // We use a fire-and-forget fetch to cancel the job reliably during unload
                 try {
                     const cancelUrl = `${NODE_API_URL}/api/v1/generate-video/cancel`;
-                    if (navigator.sendBeacon) {
-                        navigator.sendBeacon(cancelUrl);
-                    } else {
-                        fetch(cancelUrl, { method: 'DELETE', keepalive: true }).catch(() => {});
-                    }
+                    const token = localStorage.getItem('auth_token');
+                    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                    fetch(cancelUrl, { method: 'DELETE', keepalive: true, headers }).catch(() => {});
                 } catch (e) {
                     console.error("Failed to send cancel signal on unload", e);
                 }
@@ -96,7 +94,9 @@ const ExperimentalVideoGenerator = () => {
             // the user is just navigating, but in our case, navigating away from the generator
             // *should* cancel it to save resources.
             if (loadingRef.current) {
-                 fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true }).catch(() => {});
+                 const token = localStorage.getItem('auth_token');
+                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                 fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true, headers }).catch(() => {});
             }
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
@@ -414,7 +414,9 @@ const ExperimentalVideoGenerator = () => {
             } else if (['errorConnectionLost', 'errorGenerationTimeout', 'errorGenerationFailed'].includes(err.message)) {
                 toast.error(t(err.message));
                 // Automatically request cancellation if we disconnected unintentionally
-                fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true, credentials: 'include' }).catch(() => {});
+                const token = localStorage.getItem('auth_token');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true, headers }).catch(() => {});
             } else if (err.response?.status === 429 && err.response?.data?.error?.existingJobId) {
                 // If they hit the concurrency limiter (has an active job), open the cancel dialog
                 setShowActiveJobDialog(true);

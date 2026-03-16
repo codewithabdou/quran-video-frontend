@@ -522,27 +522,27 @@ const ExperimentalVideoGenerator = () => {
         <div className="relative min-h-screen pt-12 w-full overflow-hidden bg-background font-sans selection:bg-primary/20" dir={dir}>
             {/* Ambient Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-[5%] right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] animate-pulse duration-[12s]"></div>
-                <div className="absolute bottom-[10%] left-[5%] w-[35%] h-[35%] rounded-full bg-sacred-terracotta/5 blur-[100px] animate-pulse duration-[18s] delay-700"></div>
-                <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+                <div className="absolute top-[5%] right-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px] animate-pulse duration-[12s]"></div>
+                <div className="absolute bottom-[10%] left-[5%] w-[45%] h-[45%] rounded-full bg-sacred-terracotta/5 dark:bg-sacred-gold/5 blur-[100px] animate-pulse duration-[18s] delay-700"></div>
+                <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
             </div>
 
-            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-16">
-                <div className="w-full max-w-4xl flex flex-col gap-12">
+            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 md:px-6 py-12 md:py-16">
+                <div className="w-full max-w-[90rem] flex flex-col gap-8 md:gap-12">
 
                     {/* Header Section */}
                     <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-1000">
-                        <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tight text-foreground">
+                        <h1 className="text-3xl md:text-6xl font-bold tracking-tight text-foreground">
                             {t('appTitle')}
                         </h1>
-                        <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
+                        <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto font-medium">
                             {t('appDescription')}
                         </p>
                     </div>
 
-                    <div className="flex flex-col gap-12 items-center w-full max-w-4xl mx-auto">
+                    <div className="flex flex-col lg:grid lg:grid-cols-[1.1fr_0.9fr] gap-8 md:gap-12 items-start w-full mx-auto">
                         {/* Form Section */}
-                        <Card className="w-full p-2 border-none bg-card shadow-2xl shadow-black/5 animate-in fade-in slide-in-from-left-8 duration-1000 delay-100">
+                        <Card className="w-full border-none bg-card/50 backdrop-blur-xl shadow-premium animate-in fade-in slide-in-from-left-8 duration-1000 delay-100 rounded-[2rem] overflow-hidden">
                             <CardContent className="p-8">
                                 <Form {...form}>
                                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -564,10 +564,10 @@ const ExperimentalVideoGenerator = () => {
                                                             <SelectContent className="rounded-2xl border-border/10 shadow-2xl max-h-[400px]">
                                                                 {SURAHS.map((surah) => (
                                                                     <SelectItem key={surah.number} value={String(surah.number)} className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
-                                                                        <div className="flex items-center justify-between w-full gap-4">
-                                                                            <span className="text-xs font-bold w-6 h-6 flex items-center justify-center bg-muted rounded-full group-hover:bg-primary/20 transition-colors">{surah.number}</span>
-                                                                            <span className="flex-1 font-medium">{language === 'ar' ? surah.arabicName : surah.name} {language !== 'ar' && `- ${surah.englishName}`}</span>
-                                                                            <span className="font-arabic text-lg text-primary/60">{surah.arabicName}</span>
+                                                                        <div className="flex items-center w-full gap-4">
+                                                                            <span className="text-[10px] font-bold w-6 h-6 shrink-0 flex items-center justify-center bg-muted rounded-full group-hover:bg-primary/20 transition-colors">{surah.number}</span>
+                                                                            <span className="flex-1 font-medium text-sm text-left rtl:text-right">{language === 'ar' ? surah.arabicName : surah.name} {language !== 'ar' && `(${surah.englishName})`}</span>
+                                                                            <span className="font-arabic text-lg text-primary/60 shrink-0">{surah.arabicName}</span>
                                                                         </div>
                                                                     </SelectItem>
                                                                 ))}
@@ -750,7 +750,7 @@ const ExperimentalVideoGenerator = () => {
 
                         {/* Result / Preview Section */}
                         <div className="w-full flex flex-col gap-8 animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
-                            <Card className="h-full min-h-[500px] border-border bg-card/60 backdrop-blur-xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group rounded-[2rem]">
+                            <Card className="h-full min-h-[500px] border-none bg-card/50 backdrop-blur-xl shadow-premium flex flex-col items-center justify-center relative overflow-hidden group rounded-[2.5rem]">
                                 {/* Placeholder Pattern */}
                                 {!videoUrl && !loading && (
                                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -769,7 +769,7 @@ const ExperimentalVideoGenerator = () => {
                                         </div>
                                         <div className="w-full space-y-4 text-center">
                                             <div className="space-y-2">
-                                                <p className="font-serif text-xl text-foreground font-medium animate-pulse">
+                                                <p className="text-xl text-foreground font-medium animate-pulse">
                                                     {statusMessage === 'status_queued' && queuePosition
                                                         ? t('status_queued_position').replace('{{position}}', queuePosition)
                                                         : statusMessage ? t(statusMessage) : t('status_processing_video')}
@@ -869,7 +869,7 @@ const ExperimentalVideoGenerator = () => {
                                             <Video className="w-10 h-10 text-primary/40 group-hover:text-primary transition-colors duration-500" strokeWidth={1.5} />
                                         </div>
                                         <div className="text-center space-y-3">
-                                            <h3 className="text-2xl font-serif font-bold text-foreground">{t('previewTitle')}</h3>
+                                            <h3 className="text-2xl font-bold text-foreground">{t('previewTitle')}</h3>
                                             <p className="text-muted-foreground leading-relaxed max-w-[280px]">{t('previewText')}</p>
                                         </div>
                                     </div>

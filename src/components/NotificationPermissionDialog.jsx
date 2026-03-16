@@ -22,7 +22,7 @@ const NotificationPermissionDialog = ({ open, onOpenChange, onEnable, onSkip }) 
                 <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
                         <BellRing className="w-5 h-5 text-primary" />
-                        <span className="text-2xl font-serif font-bold text-foreground">
+                        <span className="text-2xl font-bold text-foreground">
                             {t('enableNotificationsTitle')}
                         </span>
                     </AlertDialogTitle>

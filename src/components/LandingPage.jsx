@@ -38,30 +38,28 @@ const LandingPage = ({ onAuthRequired }) => {
                 <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
             </div>
 
-            <div className="relative z-10 container mx-auto px-6 py-24 flex flex-col items-center justify-center text-center max-w-5xl">
-
-                {/* Main Title - Serif & Bold */}
-                <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold tracking-tight text-foreground mb-8 leading-[1.1] animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100 italic">
+            {/* Content Container */}
+            <div className="relative z-10 container mx-auto px-6 py-8 md:py-12 flex flex-col items-center justify-center text-center max-w-7xl min-h-[70vh]">
+                {/* Main Title - CSS handles serif/arabic context */}
+                <h1 className="text-5xl md:text-8xl font-bold tracking-tight text-foreground leading-[1.5] mb-8">
                     {t('welcomeTitle')}
                 </h1>
 
-                {/* Description - Sans & Warm */}
-                <p className="text-lg md:text-2xl text-muted-foreground/80 max-w-2xl mb-12 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200 leading-relaxed font-medium">
+                {/* Description */}
+                <p className="text-lg md:text-2xl text-muted-foreground max-w-2xl font-medium leading-relaxed mb-10">
                     {t('welcomeDesc')}
                 </p>
 
-                {/* CTA Button Group */}
-                <div className="flex flex-col sm:flex-row items-center gap-6 animate-in fade-in scale-in duration-1000 delay-300">
-                    <Button
-                        size="lg"
-                        onClick={handleStartGenerating}
-                        className="h-16 px-10 text-lg rounded-full group shadow-2xl shadow-primary/20"
+                {/* CTA Button */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+                    <Button 
+                        size="lg" 
+                        className="h-16 px-10 rounded-full text-lg font-bold shadow-premium hover-glow bg-primary text-primary-foreground border-none"
+                        onClick={onAuthRequired}
                     >
-                        <Play className="mr-3 w-5 h-5 fill-current transition-transform group-hover:scale-110" />
                         {t('startNowBtn')}
                     </Button>
                 </div>
-
             </div>
 
             {/* Custom Cursor / Ambient Flow element (Hidden on mobile) */}

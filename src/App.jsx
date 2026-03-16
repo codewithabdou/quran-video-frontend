@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { ThemeLanguageProvider, useThemeLanguage } from "./contexts/ThemeLanguageContext";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Navbar from "./components/Navbar";
 import AuthModal from "./components/AuthModal";
 import { Toaster } from "@/components/ui/sonner";
@@ -34,22 +34,21 @@ const LoadingFallback = () => {
 
 
 function AppContent() {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { login } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans antialiased text-foreground transition-colors duration-300">
-      <Navbar onAuthRequired={() => setIsAuthModalOpen(true)} />
-      <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
+      <Navbar onAuthRequired={login} />
       
       <main className="flex-1">
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
-            <Route path="/" element={<LandingPage onAuthRequired={() => setIsAuthModalOpen(true)} />} />
+            <Route path="/" element={<LandingPage onAuthRequired={login} />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route
               path="/generate"
               element={
-                <ProtectedRoute onAuthRequired={() => setIsAuthModalOpen(true)}>
+                <ProtectedRoute onAuthRequired={login}>
                   <ExperimentalVideoGenerator />
                 </ProtectedRoute>
               }
@@ -57,7 +56,7 @@ function AppContent() {
             <Route
               path="/history"
               element={
-                <ProtectedRoute onAuthRequired={() => setIsAuthModalOpen(true)}>
+                <ProtectedRoute onAuthRequired={login}>
                   <HistoryPage />
                 </ProtectedRoute>
               }
@@ -65,7 +64,7 @@ function AppContent() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute adminOnly onAuthRequired={() => setIsAuthModalOpen(true)}>
+                <ProtectedRoute adminOnly onAuthRequired={login}>
                   <AdminDashboard />
                 </ProtectedRoute>
               }

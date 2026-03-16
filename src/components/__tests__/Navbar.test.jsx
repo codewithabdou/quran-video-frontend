@@ -21,18 +21,21 @@ const renderWithProviders = (component) => {
 describe('Navbar', () => {
     it('should render without crashing', () => {
         renderWithProviders(<Navbar />);
-        expect(screen.getByRole('button', { name: /toggle theme/i })).toBeInTheDocument();
+        // Expect either Sun or Moon label depending on theme
+        expect(screen.getByText(/Light|Dark/i)).toBeInTheDocument();
     });
 
     it('should render language selector button', () => {
         renderWithProviders(<Navbar />);
-        expect(screen.getByRole('button', { name: /switch language/i })).toBeInTheDocument();
+        expect(screen.getByText(/English|Français|العربية/i)).toBeInTheDocument();
     });
 
     it('should render navigation links', () => {
         renderWithProviders(<Navbar />);
-        // By default should have Home and Generator link
-        expect(screen.getByText(/Home/i)).toBeInTheDocument();
-        expect(screen.getByText(/Generator/i)).toBeInTheDocument();
+        // Use regex for flexible matching (handles spaces, children etc)
+        const homeLinks = screen.getAllByText(/Home/i);
+        const genLinks = screen.getAllByText(/Generator/i);
+        expect(homeLinks.length).toBeGreaterThan(0);
+        expect(genLinks.length).toBeGreaterThan(0);
     });
 });

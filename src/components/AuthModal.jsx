@@ -23,7 +23,7 @@ const AuthModal = ({ isOpen, onOpenChange }) => {
                         <Video className="h-8 w-8 text-primary" strokeWidth={1.5} />
                     </div>
                     <div className="text-center space-y-3">
-                        <DialogTitle className="text-3xl font-serif font-bold text-foreground">
+                        <DialogTitle className="text-3xl font-bold text-foreground">
                             {t('authModalTitle')}
                         </DialogTitle>
                         <DialogDescription className="text-muted-foreground leading-relaxed px-4">

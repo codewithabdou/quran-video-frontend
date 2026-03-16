@@ -12,6 +12,11 @@ export const ThemeLanguageProvider = ({ children }) => {
 
     useEffect(() => {
         localStorage.setItem('language', language);
+        
+        // Update root attributes for global CSS targeting
+        const root = window.document.documentElement;
+        root.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+        root.setAttribute('lang', language);
     }, [language]);
 
     // Theme State

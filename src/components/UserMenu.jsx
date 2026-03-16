@@ -23,9 +23,9 @@ const UserMenu = () => {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="bg-background/50 backdrop-blur border-border hover:bg-accent hover:text-accent-foreground transition-all rounded-full overflow-hidden w-9 h-9 p-0"
+                    className="relative focus-visible:ring-0 h-10 w-10 rounded-full overflow-hidden border border-border/20 shadow-premium hover:scale-110 transition-all duration-300 p-0 bg-background/50 backdrop-blur-sm"
                 >
                     {user.avatar ? (
                         <img
@@ -35,13 +35,15 @@ const UserMenu = () => {
                             referrerPolicy="no-referrer"
                         />
                     ) : (
-                        <User className="h-[1.2rem] w-[1.2rem]" />
+                        <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                            {user.name?.charAt(0) || user.email?.charAt(0)}
+                        </div>
                     )}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
+            <DropdownMenuContent align="end" className="w-64 p-2 rounded-[2rem] border-border/10 shadow-premium bg-card/95 backdrop-blur-xl animate-in zoom-in-95 duration-200">
                 {/* User info header */}
-                <div className="px-3 py-2 border-b border-border">
+                <div className="px-4 py-3 mb-2 rounded-[1.5rem] bg-muted/30 border border-border/5">
                     <p className="text-sm font-medium truncate">{user.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     {isAdmin && (

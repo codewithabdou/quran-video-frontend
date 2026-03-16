@@ -8,9 +8,9 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                serif: ['"Playfair Display"', 'serif'],
-                sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                arabic: ['Amiri', 'serif'],
+                serif: ['Outfit', 'sans-serif'],
+                sans: ['Inter', 'sans-serif'],
+                arabic: ['"IBM Plex Sans Arabic"', 'sans-serif'],
             },
             colors: {
                 sacred: {

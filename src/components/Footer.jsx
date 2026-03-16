@@ -7,12 +7,12 @@ const Footer = () => {
 
     return (
         <footer className="w-full bg-sacred-cream/50 dark:bg-sacred-obsidian/50 border-t border-border/10 py-12 transition-colors duration-300" dir={dir}>
-            <div className="container mx-auto px-6 flex flex-col items-center justify-center gap-6 text-center">
+            <div className="container mx-auto px-6 flex flex-col items-center justify-center gap-2 text-center">
 
                 {/* Main Credit */}
-                <div className="flex flex-wrap items-center justify-center gap-2 text-foreground/80 font-medium text-lg lg:text-xl">
+                <div className="flex flex-wrap items-center justify-center gap-2 text-foreground/80">
                     <span>{t('footerMadeWith')}</span>
-                    <span className="text-primary font-serif italic font-bold">
+                    <span className="text-primary font-bold tracking-tight">
                         {t('footerName')}
                     </span>
                 </div>
@@ -20,7 +20,7 @@ const Footer = () => {
                 {/* Dua Message */}
                 <div className="relative group">
                     <div className="absolute -inset-1 bg-primary/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <p className="relative text-2xl md:text-3xl text-primary font-arabic leading-relaxed mt-2" dir="rtl">
+                    <p className="relative text-2xl md:text-4xl text-primary font-arabic mt-2 px-4" dir="rtl">
                         {t('footerDua')}
                     </p>
                 </div>

@@ -21,8 +21,8 @@ self.addEventListener('push', function (event) {
         event.waitUntil(
             self.registration.showNotification('Quran Video Generator', {
                 body: rawText,
-                icon: '/vite.svg',
-                badge: '/vite.svg',
+                icon: '/logo.png',
+                badge: '/logo.png',
             })
         );
         return;
@@ -46,8 +46,8 @@ self.addEventListener('push', function (event) {
 
         const options = {
             body: data.body || 'Your video is ready!',
-            icon: data.icon || '/vite.svg',
-            badge: '/vite.svg',
+            icon: data.icon || '/logo.png',
+            badge: '/logo.png',
             vibrate: [100, 50, 100],
             data: {
                 dateOfArrival: Date.now(),
@@ -64,8 +64,8 @@ self.addEventListener('push', function (event) {
         event.waitUntil(
             self.registration.showNotification('Quran Video Generator', {
                 body: 'You have a new update!',
-                icon: '/vite.svg',
-                badge: '/vite.svg',
+                icon: '/logo.png',
+                badge: '/logo.png',
             })
         );
     }

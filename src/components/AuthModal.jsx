@@ -9,7 +9,8 @@ import {
 import { Button } from "./ui/button";
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Video, ShieldCheck, LogIn } from 'lucide-react';
+import { Video, ShieldCheck } from 'lucide-react';
+import { GoogleIcon } from './icons/GoogleIcon';
 
 const AuthModal = ({ isOpen, onOpenChange }) => {
     const { t, dir } = useThemeLanguage();
@@ -40,7 +41,7 @@ const AuthModal = ({ isOpen, onOpenChange }) => {
                         }}
                         className="w-full h-14 rounded-2xl bg-white border border-border/50 shadow-sm hover:bg-gray-50 text-gray-900 font-bold transition-all duration-300 group"
                     >
-                        <LogIn className="w-4 h-4" />
+                        <GoogleIcon className="w-5 h-5 mr-2" />
                         {t('loginWithGoogle')}
                     </Button>
                     

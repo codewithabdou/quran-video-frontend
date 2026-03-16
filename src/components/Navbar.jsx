@@ -65,9 +65,7 @@ const Navbar = ({ onAuthRequired }) => {
                 <div className="container mx-auto flex h-20 items-center justify-between px-6">
                     {/* Logo Section */}
                     <NavLink to="/" className="flex items-center gap-3 group">
-                        <span className="text-2xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
-                            {t('appTitle') || "Quran Video"}
-                        </span>
+                        <img src="/logo.png" alt="Quran Video Logo" className="h-16 w-auto object-contain transition-transform group-hover:scale-105 duration-300" />
                     </NavLink>
 
                     {/* Desktop Navigation - Pill Shaped */}
@@ -113,7 +111,7 @@ const Navbar = ({ onAuthRequired }) => {
                                     <span className="text-sm">{languages.find(l => l.code === language)?.label}</span>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-2xl p-2 border-border/10 shadow-premium bg-card/95 backdrop-blur-xl">
+                            <DropdownMenuContent align="end" dir={dir} className="z-110 rounded-2xl p-2 border-border/10 shadow-premium bg-card/95 backdrop-blur-xl">
                                 {languages.map((lang) => (
                                     <DropdownMenuItem
                                         key={lang.code}
@@ -161,10 +159,10 @@ const Navbar = ({ onAuthRequired }) => {
 
             {/* Mobile Menu Overlay - Refined UX & Aesthetics */}
             {isOpen && (
-                <div className="md:hidden fixed inset-0 top-[80px] z-[100] bg-background/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto" dir={dir}>
-                    <div className="container mx-auto py-10 px-6 space-y-10 flex flex-col min-h-[calc(100vh-80px)] pb-32">
+                <div className="md:hidden fixed inset-0 top-[80px] z-[100] bg-background/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-hidden overscroll-none" dir={dir}>
+                    <div className="container mx-auto py-8 px-6 space-y-8 flex flex-col h-full overflow-hidden">
                         {/* Navigation Links */}
-                        <div className="flex flex-col space-y-3 flex-grow">
+                        <div className="flex flex-col space-y-2 flex-grow overflow-hidden">
                             {filteredLinks.map((link) => (
                                 <NavLink
                                     key={link.to}
@@ -181,6 +179,21 @@ const Navbar = ({ onAuthRequired }) => {
                                     <span className="text-xl font-medium">{link.label}</span>
                                 </NavLink>
                             ))}
+                            {isAuthenticated && isAdmin && (
+                                <NavLink
+                                    to="/admin"
+                                    onClick={() => setIsOpen(false)}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-5 p-5 rounded-3xl transition-all duration-300 ${isActive 
+                                            ? "bg-primary/10 text-primary font-bold shadow-sm" 
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                        }`
+                                    }
+                                >
+                                    <Shield className="h-6 w-6 shrink-0" strokeWidth={1.5} />
+                                    <span className="text-xl font-medium">{t('navAdmin')}</span>
+                                </NavLink>
+                            )}
                         </div>
 
                         {/* User Actions & System Controls */}
@@ -253,7 +266,7 @@ const Navbar = ({ onAuthRequired }) => {
                                             <span className="text-base font-semibold">{languages.find(l => l.code === language)?.label}</span>
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="rounded-[1.5rem] w-[var(--radix-dropdown-menu-trigger-width)] p-2">
+                                    <DropdownMenuContent dir={dir} className="z-110 rounded-[1.5rem] w-[var(--radix-dropdown-menu-trigger-width)] p-2">
                                         {languages.map((lang) => (
                                             <DropdownMenuItem key={lang.code} onClick={() => {
                                                 setLanguage(lang.code);

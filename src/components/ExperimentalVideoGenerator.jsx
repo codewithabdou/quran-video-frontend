@@ -143,9 +143,9 @@ const ExperimentalVideoGenerator = () => {
         const handleMessage = (event) => {
             if (event.data && event.data.type === 'PUSH_RECEIVED') {
                 console.log('%c[Push Received via SW Message] %o', 'color: #27b059; font-weight: bold;', event.data.payload);
-                toast.info(`Push notification received: ${event.data.payload.title || 'Ready'}`);
+                // Removed toast.info dev message
             } else if (event.data && event.data.type === 'PUSH_HEARTBEAT') {
-                console.log('%c[SW Heartbeat] Push event just woke up the Service Worker! Check your system notifications.', 'color: #3b82f6; font-weight: italic;');
+                console.log('%c[SW Heartbeat] Push event just woke up the Service Worker!', 'color: #3b82f6; font-weight: italic;');
             }
         };
 
@@ -330,6 +330,7 @@ const ExperimentalVideoGenerator = () => {
                 request_id: requestId,
                 background_url: finalBackgroundUrl,
                 platform: data.platform,
+                language: language,
                 subscription: subscription
             }, { withCredentials: true });
 
@@ -473,7 +474,7 @@ const ExperimentalVideoGenerator = () => {
             try {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    toast.success(t('enableNotificationsTitle')); // Reusing title as simple success msg or could add strict key
+                    toast.success(t('notificationEnabled'));
                 }
             } catch (e) {
                 console.error("Permission request failed", e);
@@ -512,7 +513,7 @@ const ExperimentalVideoGenerator = () => {
             setShowCancel(false);
         } catch (error) {
             console.error("Failed to cancel active job:", error);
-            toast.error("Failed to cancel the active job. Please try again later.");
+            toast.error(t("failedCancelJob"));
         } finally {
             setIsCancelingActiveJob(false);
         }
@@ -555,7 +556,26 @@ const ExperimentalVideoGenerator = () => {
                                                 render={({ field }) => (
                                                     <FormItem className="space-y-3">
                                                         <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('surah')}</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <Select 
+                                                            onValueChange={(value) => {
+                                                                field.onChange(value);
+                                                                const surah = SURAHS.find(s => String(s.number) === value);
+                                                                if (surah) {
+                                                                    const currentEnd = form.getValues("ayah_end");
+                                                                    const currentStart = form.getValues("ayah_start");
+
+                                                                    // Only update if current values are out of bounds for the new surah
+                                                                    if (currentEnd > surah.ayahs || !currentEnd) {
+                                                                        form.setValue("ayah_end", surah.ayahs);
+                                                                    }
+                                                                    
+                                                                    if (currentStart > surah.ayahs) {
+                                                                        form.setValue("ayah_start", 1);
+                                                                    }
+                                                                }
+                                                            }} 
+                                                            defaultValue={field.value}
+                                                        >
                                                             <FormControl>
                                                                 <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
                                                                     <SelectValue placeholder={t('selectSurah')} />
@@ -613,43 +633,56 @@ const ExperimentalVideoGenerator = () => {
 
                                         {/* Ayah Range Row */}
                                         <div className="grid grid-cols-2 gap-6 p-6 rounded-3xl bg-muted/20 border border-border/5">
-                                            <FormField
-                                                control={form.control}
-                                                name="ayah_start"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('startAyah')}</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                type="number"
-                                                                min="1"
-                                                                {...field}
-                                                                className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                            {/* Pre-calculate max ayahs for validation */}
+                                            {(() => {
+                                                const selectedSurahNum = form.watch("surah");
+                                                const surahObj = SURAHS.find(s => String(s.number) === String(selectedSurahNum));
+                                                const maxAyahs = surahObj ? surahObj.ayahs : 286;
 
-                                            <FormField
-                                                control={form.control}
-                                                name="ayah_end"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('endAyah')}</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                type="number"
-                                                                min="1"
-                                                                {...field}
-                                                                className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                                return (
+                                                    <>
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="ayah_start"
+                                                            render={({ field }) => (
+                                                                <FormItem className="space-y-3">
+                                                                    <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('startAyah')}</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            max={maxAyahs}
+                                                                            {...field}
+                                                                            className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="ayah_end"
+                                                            render={({ field }) => (
+                                                                <FormItem className="space-y-3">
+                                                                    <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('endAyah')}</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            max={maxAyahs}
+                                                                            {...field}
+                                                                            className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
 
                                         {/* Background Selector & Resolution Row */}
@@ -738,7 +771,6 @@ const ExperimentalVideoGenerator = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-3">
-                                                    <Zap className="h-6 w-6 group-hover:scale-110 transition-transform fill-current" />
                                                     <span>{t('generateBtn')}</span>
                                                 </div>
                                             )}

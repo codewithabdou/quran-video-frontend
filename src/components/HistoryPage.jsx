@@ -64,11 +64,11 @@ export default function HistoryPage() {
         <div className="min-h-screen bg-background p-6 pt-24" dir={dir}>
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row items-between gap-3 justify-between">
                     <div className="flex items-center gap-3">
                         <div>
-                            <h1 className="text-3xl font-bold flex items-center gap-2">
-                                <History className="w-8 h-8 text-primary" />
+                            <h1 className="md:text-3xl text-xl font-bold flex items-center gap-2">
+                                <History className=" text-primary" />
                                 {t('genHistoryTitle')}
                             </h1>
                             <p className="text-muted-foreground text-sm mt-1">
@@ -131,7 +131,7 @@ export default function HistoryPage() {
                                         </div>
                                         <div className="flex items-center gap-3 shrink-0">
                                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${statusStyles[gen.status] || 'bg-muted text-muted-foreground'}`}>
-                                                {gen.status}
+                                                {t(`status_${gen.status}`) || gen.status}
                                             </span>
                                             <span className="text-xs text-muted-foreground whitespace-nowrap">
                                                 {formatDate(gen.createdAt)}

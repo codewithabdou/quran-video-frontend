@@ -6,7 +6,7 @@ const Footer = () => {
     const { t, dir } = useThemeLanguage();
 
     return (
-        <footer className="w-full bg-sacred-cream/50 dark:bg-sacred-obsidian/50 border-t border-border/10 py-12 transition-colors duration-300" dir={dir}>
+        <footer className="w-full bg-card/30 backdrop-blur-md border-t border-border/10 py-12 transition-all duration-500" dir={dir}>
             <div className="container mx-auto px-6 flex flex-col items-center justify-center gap-2 text-center">
 
                 {/* Main Credit */}
@@ -34,7 +34,7 @@ const Footer = () => {
                         className="group flex flex-col items-center gap-2"
                         aria-label="GitHub Profile"
                     >
-                        <div className="bg-muted/50 p-3 rounded-full group-hover:bg-primary/20 group-hover:text-primary transition-all duration-300 group-hover:scale-110 shadow-sm">
+                        <div className="bg-card/40 backdrop-blur-sm p-3 rounded-full group-hover:bg-primary/20 group-hover:text-primary transition-all duration-300 group-hover:scale-110 shadow-premium border border-border/5">
                             <Github className="w-5 h-5" strokeWidth={1.5} />
                         </div>
                         <span className="text-[10px] font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary">{t('github')}</span>
@@ -46,7 +46,7 @@ const Footer = () => {
                         className="group flex flex-col items-center gap-2"
                         aria-label="LinkedIn Profile"
                     >
-                        <div className="bg-muted/50 p-3 rounded-full group-hover:bg-primary/20 group-hover:text-primary transition-all duration-300 group-hover:scale-110 shadow-sm">
+                        <div className="bg-card/40 backdrop-blur-sm p-3 rounded-full group-hover:bg-primary/20 group-hover:text-primary transition-all duration-300 group-hover:scale-110 shadow-premium border border-border/5">
                             <Linkedin className="w-5 h-5" strokeWidth={1.5} />
                         </div>
                         <span className="text-[10px] font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary">{t('linkedin')}</span>

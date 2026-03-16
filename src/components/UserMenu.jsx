@@ -14,7 +14,7 @@ import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
 
 const UserMenu = () => {
     const { user, isAdmin, logout } = useAuth();
-    const { t } = useThemeLanguage();
+    const { t, dir } = useThemeLanguage();
     const navigate = useNavigate();
 
     if (!user) return null;
@@ -41,7 +41,7 @@ const UserMenu = () => {
                     )}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-2 rounded-[2rem] border-border/10 shadow-premium bg-card/95 backdrop-blur-xl animate-in zoom-in-95 duration-200">
+            <DropdownMenuContent align="end" dir={dir} className="w-64 p-2 rounded-[2rem] border-border/10 shadow-premium bg-card/95 backdrop-blur-xl animate-in zoom-in-95 duration-200">
                 {/* User info header */}
                 <div className="px-4 py-3 mb-2 rounded-[1.5rem] bg-muted/30 border border-border/5">
                     <p className="text-sm font-medium truncate">{user.name}</p>

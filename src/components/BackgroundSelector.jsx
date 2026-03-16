@@ -11,7 +11,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 
 const BackgroundSelector = ({ value, onChange, className, platform }) => {
-    const { t } = useThemeLanguage();
+    const { t, dir, language } = useThemeLanguage();
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -70,7 +70,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-card/40 rounded-[2rem] border border-dashed border-primary/10 transition-all duration-500">
+            <div className="flex flex-col items-center justify-center p-12 bg-card/40 rounded-4xl border border-dashed border-primary/10 transition-all duration-500">
                 <div className="relative">
                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
                     <Loader2 className="w-10 h-10 animate-spin text-primary relative z-10" />
@@ -83,7 +83,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
     // If no videos loaded, show info message (not an error)
     if (videos.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-sacred-cream/30 dark:bg-sacred-obsidian/30 rounded-[2rem] border border-primary/5">
+            <div className="flex flex-col items-center justify-center p-8 bg-sacred-cream/30 dark:bg-sacred-obsidian/30 rounded-4xl border border-primary/5">
                 <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4">
                     <AlertCircle className="w-8 h-8 text-primary/40" />
                 </div>
@@ -99,8 +99,11 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
         <div className={cn("w-full", className)}>
             <div className="relative w-full">
                 <Swiper
+                    key={`${language}-${dir}`}
                     modules={[Navigation]}
                     navigation
+                    dir={dir}
+                    rtl={dir === 'rtl'}
                     spaceBetween={20}
                     slidesPerView={1}
                     className={cn("w-full py-2", platform !== 'youtube' && "max-w-[280px] mx-auto")}
@@ -121,7 +124,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                                     >
                                         <div className={cn(
                                             "relative w-full overflow-hidden flex items-center justify-center",
-                                            platform === 'youtube' ? "aspect-[16/9]" : "aspect-[9/16]"
+                                            platform === 'youtube' ? "aspect-video" : "aspect-9/16"
                                         )}>
                                             <img
                                                 src={video.image}
@@ -135,7 +138,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                                             />
 
                                             {/* Gradient Overlays */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                                            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/20 opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
                                             
                                             {/* Selection Visuals */}
                                             {isSelected && (

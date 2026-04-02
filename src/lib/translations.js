@@ -173,6 +173,7 @@ export const translations = {
         share: "Share",
         copyLink: "Copy Link",
         linkCopied: "Link copied to clipboard",
+        preparingVideo: "Preparing video...",
     },
     fr: {
         appTitle: "Créer des Vidéos Coraniques",
@@ -347,6 +348,7 @@ export const translations = {
         share: "Partager",
         copyLink: "Copier le lien",
         linkCopied: "Lien copié dans le presse-papiers",
+        preparingVideo: "Préparation de la vidéo...",
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -521,5 +523,6 @@ export const translations = {
         share: "مشاركة",
         copyLink: "نسخ الرابط",
         linkCopied: "تم نسخ الرابط إلى الحافظة",
+        preparingVideo: "جاري تجهيز الفيديو...",
     }
 };

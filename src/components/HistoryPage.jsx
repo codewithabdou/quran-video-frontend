@@ -75,26 +75,61 @@ export default function HistoryPage() {
     };
 
     const handleShare = async (gen) => {
+        const surahData = SURAHS.find(s => s.number === gen.surah);
+        const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : `Surah${gen.surah}`;
+        const fileName = `${surahName}_Ayah${gen.ayahStart}-${gen.ayahEnd}_${gen.resolution}p.mp4`;
         const shareUrl = `${NODE_API_URL}/api/v1/download/${gen.id}`;
-        const shareTitle = t('appTitle');
-        const shareText = `${t('ayah')} ${gen.surah}:${gen.ayahStart}-${gen.ayahEnd}`;
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: shareTitle,
-                    text: shareText,
-                    url: shareUrl,
-                });
-            } catch (err) {
-                console.error(err);
-            }
-        } else {
+        // If simple text sharing isn't supported, we definitely can't do file sharing
+        if (!navigator.share) {
             try {
                 await navigator.clipboard.writeText(shareUrl);
                 toast.success(t('linkCopied'));
             } catch (err) {
                 toast.error(t('copyFailed'));
+            }
+            return;
+        }
+
+        try {
+            // Check if file sharing is supported
+            const isFileShareSupported = navigator.canShare && navigator.canShare({ files: [new File([], 'test.mp4', { type: 'video/mp4' })] });
+
+            if (isFileShareSupported) {
+                const toastId = toast.loading(t('preparingVideo') || 'Preparing video for sharing...');
+                try {
+                    const response = await fetch(shareUrl, { credentials: 'include' });
+                    if (!response.ok) throw new Error('Download failed');
+                    const blob = await response.blob();
+                    const file = new File([blob], fileName, { type: 'video/mp4' });
+
+                    await navigator.share({
+                        title: `${t('appTitle')} - ${surahName}`,
+                        files: [file],
+                    });
+                    toast.dismiss(toastId);
+                } catch (err) {
+                    toast.dismiss(toastId);
+                    if (err.name !== 'AbortError') throw err;
+                }
+            } else {
+                // Fallback to text/URL sharing
+                await navigator.share({
+                    title: t('appTitle'),
+                    text: `${t('ayah')} ${gen.surah}:${gen.ayahStart}-${gen.ayahEnd}`,
+                    url: shareUrl,
+                });
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error("Sharing failed:", err);
+                // Last ditch effort: try to just copy the link
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success(t('linkCopied'));
+                } catch (copyErr) {
+                    toast.error(t('shareNotSupported'));
+                }
             }
         }
     };

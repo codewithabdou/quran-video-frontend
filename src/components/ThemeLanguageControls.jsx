@@ -42,7 +42,7 @@ const ThemeLanguageControls = () => {
                     size="icon"
                     onClick={() => navigate('/')}
                     className="bg-background/50 backdrop-blur border-border hover:bg-accent hover:text-accent-foreground transition-all"
-                    title="Back to Home"
+                    title={t('backToHome')}
                 >
                     <Home className="h-[1.2rem] w-[1.2rem]" />
                 </Button>
@@ -52,7 +52,7 @@ const ThemeLanguageControls = () => {
                     size="icon"
                     onClick={() => navigate('/generate')}
                     className="bg-background/50 backdrop-blur border-border hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all text-primary"
-                    title="Start Generator"
+                    title={t('startGenerator')}
                 >
                     <BookOpen className="h-[1.2rem] w-[1.2rem]" />
                 </Button>
@@ -63,7 +63,7 @@ const ThemeLanguageControls = () => {
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="bg-background/50 backdrop-blur border-border hover:bg-accent hover:text-accent-foreground transition-all">
                         <Globe className="h-[1.2rem] w-[1.2rem]" />
-                        <span className="sr-only">Switch Language</span>
+                        <span className="sr-only">{t('switchLanguage')}</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-popover border-border">
@@ -86,18 +86,18 @@ const ThemeLanguageControls = () => {
                     <Button variant="outline" size="icon" className="bg-background/50 backdrop-blur border-border hover:bg-accent hover:text-accent-foreground transition-all">
                         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                         <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                        <span className="sr-only">Toggle theme</span>
+                        <span className="sr-only">{t('toggleTheme')}</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setTheme("light")}>
-                        {t('light') || 'Light'}
+                        {t('light')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme("dark")}>
-                        {t('dark') || 'Dark'}
+                        {t('dark')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme("system")}>
-                        {t('system') || 'System'}
+                        {t('system')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

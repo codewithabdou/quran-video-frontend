@@ -47,7 +47,7 @@ export default function HistoryPage() {
 
     const formatDate = (dateStr) => {
         const date = new Date(dateStr);
-        return new Intl.DateTimeFormat('en-US', {
+        return new Intl.DateTimeFormat(language, {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -58,8 +58,8 @@ export default function HistoryPage() {
 
     const formatDuration = (seconds) => {
         if (!seconds) return '—';
-        if (seconds < 60) return `${Math.round(seconds)}s`;
-        return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+        if (seconds < 60) return `${Math.round(seconds)}${t('secondsUnit') || 's'}`;
+        return `${Math.floor(seconds / 60)}${t('minutesUnit') || 'm'} ${Math.round(seconds % 60)}${t('secondsUnit') || 's'}`;
     };
 
     const getTimeLeft = (expiresAt) => {
@@ -67,7 +67,8 @@ export default function HistoryPage() {
         if (diff <= 0) return null;
         const h = Math.floor(diff / (1000 * 60 * 60));
         const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        if (h > 0) return `${h}${t('hoursUnit') || 'h'} ${m}${t('minutesUnit') || 'm'}`;
+        return `${m}${t('minutesUnit') || 'm'}`;
     };
 
     const handleDownload = (jobId) => {

@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useThemeLanguage } from "@/contexts/ThemeLanguageContext"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,8 +40,11 @@ export function DataTable({
   data,
   filterColumn = "id",
   filterPlaceholder = "Filter...",
-  columnsLabel = "Columns"
+  columnsLabel
 }) {
+  const { t } = useThemeLanguage()
+  filterPlaceholder = filterPlaceholder || t('filter')
+  columnsLabel = columnsLabel || t('columns')
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
   const [columnVisibility, setColumnVisibility] = React.useState({})
@@ -145,7 +149,7 @@ export function DataTable({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {t('noResults')}
                 </TableCell>
               </TableRow>
             )}
@@ -156,11 +160,11 @@ export function DataTable({
       {/* Pagination */}
       <div className="flex items-center justify-between px-2">
         <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredRowModel().rows.length} total
+            {table.getFilteredRowModel().rows.length} {t('total')}
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            <div className="flex items-center justify-center text-sm font-medium">
+            {t('page')} {table.getState().pagination.pageIndex + 1} {t('of')}{" "}
             {table.getPageCount() || 1}
             </div>
             <div className="flex items-center space-x-2">
@@ -170,7 +174,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
             >
-                <span className="sr-only">Go to first page</span>
+                <span className="sr-only">{t('goToFirstPage')}</span>
                 <ChevronsLeft className="h-4 w-4" />
             </Button>
             <Button
@@ -179,7 +183,7 @@ export function DataTable({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
             >
-                <span className="sr-only">Go to previous page</span>
+                <span className="sr-only">{t('goToPreviousPage')}</span>
                 <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
@@ -188,7 +192,7 @@ export function DataTable({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
             >
-                <span className="sr-only">Go to next page</span>
+                <span className="sr-only">{t('goToNextPage')}</span>
                 <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
@@ -197,7 +201,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
             >
-                <span className="sr-only">Go to last page</span>
+                <span className="sr-only">{t('goToLastPage')}</span>
                 <ChevronsRight className="h-4 w-4" />
             </Button>
             </div>

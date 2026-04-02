@@ -12,7 +12,11 @@ import {
     Sun,
     Globe,
     Shield,
-    LogOut
+    LogOut,
+    Radio,
+    BookOpen,
+    Clock,
+    Heart
 } from 'lucide-react';
 import { Button } from "./ui/button";
 import {
@@ -51,6 +55,10 @@ const Navbar = ({ onAuthRequired }) => {
 
     const navLinks = [
         { to: '/', label: t('navHome'), icon: Home },
+        { to: '/quran', label: t('navQuran'), icon: Radio },
+        { to: '/mushaf', label: t('navMushaf'), icon: BookOpen },
+        { to: '/prayer-times', label: t('navPrayers'), icon: Clock },
+        { to: '/azkar', label: t('navAzkar'), icon: Heart },
         { to: '/generate', label: t('navGenerator'), icon: Video },
         { to: '/history', label: t('navHistory'), icon: History, protected: true },
     ];
@@ -65,7 +73,7 @@ const Navbar = ({ onAuthRequired }) => {
                 <div className="container mx-auto flex h-20 items-center justify-between px-6">
                     {/* Logo Section */}
                     <NavLink to="/" className="flex items-center gap-3 group">
-                        <img src="/logo.png" alt="Quran Video Logo" className="h-16 w-auto object-contain transition-transform group-hover:scale-105 duration-300" />
+                        <img src="/logo.png" alt={t('logoAlt')} className="h-16 w-auto object-contain transition-transform group-hover:scale-105 duration-300" />
                     </NavLink>
 
                     {/* Desktop Navigation - Pill Shaped */}
@@ -75,7 +83,7 @@ const Navbar = ({ onAuthRequired }) => {
                                 key={link.to}
                                 to={link.to}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-3 px-10 py-2 text-sm font-medium rounded-full transition-all duration-300 ${isActive
+                                    `flex items-center gap-3 px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ${isActive
                                         ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
                                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                     }`

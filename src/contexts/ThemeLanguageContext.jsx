@@ -2,7 +2,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { translations } from '../lib/translations';
 
-const ThemeLanguageContext = createContext();
+const ThemeLanguageContext = createContext({
+    language: 'en',
+    setLanguage: () => {},
+    theme: 'system',
+    setTheme: () => {},
+    t: (key) => key,
+    dir: 'ltr'
+});
 
 export const ThemeLanguageProvider = ({ children }) => {
     // Language State
@@ -63,8 +70,14 @@ export const ThemeLanguageProvider = ({ children }) => {
         setTheme(newTheme);
     };
 
-    const t = (key) => {
-        return translations[language][key] || key;
+    const t = (key, params = {}) => {
+        let translation = translations[language]?.[key] || translations['en']?.[key] || key;
+        if (params && typeof translation === 'string') {
+            Object.keys(params).forEach(paramKey => {
+                translation = translation.replace(`{{${paramKey}}}`, params[paramKey]);
+            });
+        }
+        return translation;
     };
 
     return (
@@ -81,4 +94,10 @@ export const ThemeLanguageProvider = ({ children }) => {
     );
 };
 
-export const useThemeLanguage = () => useContext(ThemeLanguageContext);
+export const useThemeLanguage = () => {
+    const context = useContext(ThemeLanguageContext);
+    if (context === undefined) {
+        throw new Error('useThemeLanguage must be used within a ThemeLanguageProvider');
+    }
+    return context;
+};

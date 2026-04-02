@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
 
 /**
  * Handles the OAuth callback redirect from the backend.
@@ -9,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
     const { handleCallback } = useAuth();
+    const { t } = useThemeLanguage();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,7 +38,7 @@ const AuthCallback = () => {
         <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Signing you in...</p>
+                <p className="text-muted-foreground">{t('signingIn')}</p>
             </div>
         </div>
     );

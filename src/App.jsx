@@ -16,6 +16,10 @@ const ExperimentalVideoGenerator = lazy(() => import("./components/ExperimentalV
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 const HistoryPage = lazy(() => import("./components/HistoryPage"));
 const AuthCallback = lazy(() => import("./components/AuthCallback"));
+const QuranRadio = lazy(() => import("./components/QuranRadio"));
+const MushafReader = lazy(() => import("./components/MushafReader"));
+const PrayerTimes = lazy(() => import("./components/PrayerTimes"));
+const AzkarPage = lazy(() => import("./components/AzkarPage"));
 
 // Loading fallback component with translation support
 const LoadingFallback = () => {
@@ -45,6 +49,10 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<LandingPage onAuthRequired={login} />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/quran" element={<QuranRadio />} />
+            <Route path="/mushaf" element={<MushafReader />} />
+            <Route path="/prayer-times" element={<PrayerTimes />} />
+            <Route path="/azkar" element={<AzkarPage />} />
             <Route
               path="/generate"
               element={

@@ -182,9 +182,10 @@ function UsersTab() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t("confirmRoleTitle")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t("confirmRoleDesc")
-                                .replace("{{name}}", confirmUser?.name || "")
-                                .replace("{{role}}", t((confirmUser?.role === "ADMIN" ? "USER" : "ADMIN").toLowerCase() + "_role"))}
+                            {t("confirmRoleDesc", { 
+                                name: confirmUser?.name || "", 
+                                role: t((confirmUser?.role === "ADMIN" ? "user" : "admin") + "_role") 
+                            })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -210,7 +211,7 @@ function UsersTab() {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-destructive font-bold">{t("confirmDeleteTitle")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t("confirmDeleteDesc").replace("{{name}}", confirmUser?.name || "")}
+                            {t("confirmDeleteDesc", { name: confirmUser?.name || "" })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

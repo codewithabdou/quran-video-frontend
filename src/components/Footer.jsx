@@ -32,7 +32,7 @@ const Footer = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex flex-col items-center gap-2"
-                        aria-label="GitHub Profile"
+                        aria-label={t('githubProfile')}
                     >
                         <div className="bg-card/40 backdrop-blur-sm p-3 rounded-full group-hover:bg-primary/20 group-hover:text-primary transition-all duration-300 group-hover:scale-110 shadow-premium border border-border/5">
                             <Github className="w-5 h-5" strokeWidth={1.5} />
@@ -44,7 +44,7 @@ const Footer = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex flex-col items-center gap-2"
-                        aria-label="LinkedIn Profile"
+                        aria-label={t('linkedinProfile')}
                     >
                         <div className="bg-card/40 backdrop-blur-sm p-3 rounded-full group-hover:bg-primary/20 group-hover:text-primary transition-all duration-300 group-hover:scale-110 shadow-premium border border-border/5">
                             <Linkedin className="w-5 h-5" strokeWidth={1.5} />

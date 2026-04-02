@@ -69,39 +69,72 @@ const ExperimentalVideoGenerator = () => {
 
     // Handle beforeunload (tab close/refresh) and unmount
     useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (loadingRef.current) {
+                // Trigger the browser's native "Are you sure?" dialog
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
+
         const handleUnload = () => {
             if (loadingRef.current) {
-                // We use a fire-and-forget fetch to cancel the job reliably during unload
+                // If they chose to leave/reload, explicitly cancel the job on the server
                 try {
                     const cancelUrl = `${NODE_API_URL}/api/v1/generate-video/cancel`;
                     const token = localStorage.getItem('auth_token');
                     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                    
+                    // Use keepalive to ensure the request finishes even as the page dies
                     fetch(cancelUrl, { method: 'DELETE', keepalive: true, headers }).catch(() => {});
+                    
+                    // Clear persistence so it doesn't "recover" a cancelled job
+                    localStorage.removeItem('active_generation_id');
+                    localStorage.removeItem('active_generation_timestamp');
                 } catch (e) {
                     console.error("Failed to send cancel signal on unload", e);
                 }
             }
         };
 
-        window.addEventListener('beforeunload', handleUnload);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('unload', handleUnload);
 
         // Cleanup on unmount
         return () => {
-            window.removeEventListener('beforeunload', handleUnload);
-            // If the component unmounts while still loading, cancel the job
-            // NOTE: We do not trigger handleUnload() directly here because normal unmounts
-            // in React (like strict mode) shouldn't arbitrarily kill backend processes if
-            // the user is just navigating, but in our case, navigating away from the generator
-            // *should* cancel it to save resources.
-            if (loadingRef.current) {
-                 const token = localStorage.getItem('auth_token');
-                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                 fetch(`${NODE_API_URL}/api/v1/generate-video/cancel`, { method: 'DELETE', keepalive: true, headers }).catch(() => {});
-            }
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('unload', handleUnload);
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
             }
         };
+    }, []);
+
+    // Recovery logic: On mount, check if there's a pending generation from a previous session
+    useEffect(() => {
+        const recoverPendingJob = async () => {
+            const pendingJobId = localStorage.getItem('active_generation_id');
+            const pendingJobTimestamp = localStorage.getItem('active_generation_timestamp');
+            
+            if (pendingJobId && pendingJobTimestamp) {
+                const now = Date.now();
+                const ageMinutes = (now - parseInt(pendingJobTimestamp)) / (1000 * 60);
+                
+                // Only recover if the job started less than 3 hours ago (same as VPS expiry)
+                if (ageMinutes < 180) {
+                    console.log(`[Frontend] Recovering pending job: ${pendingJobId}`);
+                    // Start the tracking logic using the recovered ID
+                    trackProgress(pendingJobId);
+                } else {
+                    // Job is too old, clean up
+                    localStorage.removeItem('active_generation_id');
+                    localStorage.removeItem('active_generation_timestamp');
+                }
+            }
+        };
+        
+        recoverPendingJob();
     }, []);
 
     // Detect when progress is stuck at the same value for 60+ seconds
@@ -252,6 +285,10 @@ const ExperimentalVideoGenerator = () => {
 
         // Generate Request ID
         const requestId = crypto.randomUUID();
+        
+        // Persist the ID immediately for recovery
+        localStorage.setItem('active_generation_id', requestId);
+        localStorage.setItem('active_generation_timestamp', Date.now().toString());
 
         // Subscribe to notifications BEFORE starting generation
         const subscription = await subscribeToPush(requestId);
@@ -338,72 +375,8 @@ const ExperimentalVideoGenerator = () => {
             console.log("[Frontend] Job enqueued successfully. Job ID:", jobId);
             setStatusMessage("status_queued");
 
-            // 2. Start SSE to track progress
-            const progressEndpoint = `${NODE_API_URL}/api/v1/progress/${jobId}`;
-            const eventSource = new EventSource(progressEndpoint);
-            eventSourceRef.current = eventSource;
-
-            // Wrap SSE in a promise so we can await completion
-            await new Promise((resolve, reject) => {
-                eventSource.onmessage = (event) => {
-                    try {
-                        const payload = JSON.parse(event.data);
-                        if (payload.status === "cancelled") {
-                            setProgress(0);
-                            setStatusMessage("");
-                            eventSource.close();
-                            reject(new Error('cancelled'));
-                        } else if (payload.status === "status_completed" || payload.status === "completed" || payload.percentage === 100) {
-                            setProgress(100);
-                            setStatusMessage("status_completed");
-                            eventSource.close();
-                            resolve();
-                        } else if (payload.error) {
-                            console.error("Backend generation error:", payload.error);
-                            eventSource.close();
-                            reject(new Error(payload.error));
-                        } else if (payload.percentage !== undefined) {
-                            setProgress(payload.percentage);
-                            setStatusMessage(payload.status);
-                            if (payload.queuePosition !== undefined) {
-                                setQueuePosition(payload.queuePosition);
-                            } else {
-                                setQueuePosition(null);
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Error parsing progress:", e);
-                    }
-                };
-
-                eventSource.onerror = () => {
-                    eventSource.close();
-                    reject(new Error("errorConnectionLost"));
-                };
-
-                // Safety timeout — close SSE after 10 minutes
-                const timeoutId = setTimeout(() => {
-                    eventSource.close();
-                    reject(new Error("errorGenerationTimeout"));
-                }, 10 * 60 * 1000);
-
-                // Assuming success/failure will eventually trigger a resolve/reject internally
-                // We should clear the timeout when it does, but since it's wrapped in a promise, we handle it loosely 
-                // in the `finally` block or let the UI reset it.
-            });
-
-            // 3. Download the completed video using fetch to bypass Axios/DevTools blob bug
-            setStatusMessage("status_downloading");
-            console.log("[Frontend] Downloading final video...");
-            const videoResponse = await fetch(`${NODE_API_URL}/api/v1/download/${jobId}`, {
-                credentials: 'include'
-            });
-            if (!videoResponse.ok) throw new Error("Failed to download video");
-            
-            const videoData = await videoResponse.blob();
-            const url = URL.createObjectURL(videoData);
-            setVideoUrl(url);
-            toast.success(t('videoGeneratedSuccess'));
+            // 2. Start tracking progress
+            await trackProgress(jobId);
 
         } catch (err) {
             console.error(err);
@@ -453,6 +426,83 @@ const ExperimentalVideoGenerator = () => {
             }
         } finally {
             setLoading(false);
+            // Clear persistence on finish
+            localStorage.removeItem('active_generation_id');
+            localStorage.removeItem('active_generation_timestamp');
+        }
+    };
+
+    const trackProgress = async (jobId) => {
+        setLoading(true);
+        setStatusMessage("status_queued");
+        
+        try {
+            // 1. Start SSE to track progress
+            const progressEndpoint = `${NODE_API_URL}/api/v1/progress/${jobId}`;
+            const eventSource = new EventSource(progressEndpoint);
+            eventSourceRef.current = eventSource;
+
+            // Wrap SSE in a promise so we can await completion
+            await new Promise((resolve, reject) => {
+                eventSource.onmessage = (event) => {
+                    try {
+                        const payload = JSON.parse(event.data);
+                        if (payload.status === "cancelled") {
+                            setProgress(0);
+                            setStatusMessage("");
+                            eventSource.close();
+                            reject(new Error('cancelled'));
+                        } else if (payload.status === "status_completed" || payload.status === "completed" || payload.percentage === 100) {
+                            setProgress(100);
+                            setStatusMessage("status_completed");
+                            eventSource.close();
+                            resolve();
+                        } else if (payload.error) {
+                            console.error("Backend generation error:", payload.error);
+                            eventSource.close();
+                            reject(new Error(payload.error));
+                        } else if (payload.percentage !== undefined) {
+                            setProgress(payload.percentage);
+                            setStatusMessage(payload.status);
+                            if (payload.queuePosition !== undefined) {
+                                setQueuePosition(payload.queuePosition);
+                            } else {
+                                setQueuePosition(null);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error parsing progress:", e);
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+                    reject(new Error("errorConnectionLost"));
+                };
+
+                // Safety timeout — close SSE after 10 minutes
+                const timeoutId = setTimeout(() => {
+                    eventSource.close();
+                    reject(new Error("errorGenerationTimeout"));
+                }, 10 * 60 * 1000);
+            });
+
+            // 2. Download the completed video using fetch to bypass Axios/DevTools blob bug
+            setStatusMessage("status_downloading");
+            console.log("[Frontend] Downloading final video...");
+            const videoResponse = await fetch(`${NODE_API_URL}/api/v1/download/${jobId}`, {
+                credentials: 'include'
+            });
+            if (!videoResponse.ok) throw new Error("Failed to download video");
+            
+            const videoData = await videoResponse.blob();
+            const url = URL.createObjectURL(videoData);
+            setVideoUrl(url);
+            toast.success(t('videoGeneratedSuccess'));
+
+        } catch (err) {
+            // Re-throw to startGeneration's catch block
+            throw err;
         }
     };
 
@@ -513,6 +563,10 @@ const ExperimentalVideoGenerator = () => {
             setQueuePosition(null);
             setStatusMessage("");
             setShowCancel(false);
+            
+            // Clear persistence on manual cancel
+            localStorage.removeItem('active_generation_id');
+            localStorage.removeItem('active_generation_timestamp');
         } catch (error) {
             console.error("Failed to cancel active job:", error);
             toast.error(t("failedCancelJob"));

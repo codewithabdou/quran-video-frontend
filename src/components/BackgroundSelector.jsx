@@ -103,7 +103,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                     modules={[Navigation]}
                     navigation
                     dir={dir}
-                    rtl={dir === 'rtl'}
+                    rtl={(dir === 'rtl').toString()}
                     spaceBetween={20}
                     slidesPerView={1}
                     className={cn("w-full py-2", platform !== 'youtube' && "max-w-[280px] mx-auto")}

@@ -236,6 +236,10 @@ export const translations = {
         minutesUnit: "m",
         secondsUnit: "s",
         fontSizeLabel: "Font",
+        changeLocation: "Change Location",
+        searchCity: "Search for a city...",
+        continueReading: "Continue Reading",
+        lastRead: "Last Read",
     },
     fr: {
         appTitle: "Créer des Vidéos Coraniques",
@@ -474,6 +478,10 @@ export const translations = {
         minutesUnit: "m",
         secondsUnit: "s",
         fontSizeLabel: "Taille",
+        changeLocation: "Changer la position",
+        searchCity: "Rechercher une ville...",
+        continueReading: "Continuer la lecture",
+        lastRead: "Dernière lecture",
     },
     ar: {
         appTitle: "إنشاء مقاطع قرآنية",
@@ -712,5 +720,9 @@ export const translations = {
         minutesUnit: " د",
         secondsUnit: "ث",
         fontSizeLabel: "الحجم",
+        changeLocation: "تغيير الموقع",
+        searchCity: "ابحث عن مدينة...",
+        continueReading: "متابعة القراءة",
+        lastRead: "آخر قراءة",
     },
 };

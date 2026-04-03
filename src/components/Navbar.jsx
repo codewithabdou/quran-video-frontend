@@ -69,7 +69,7 @@ const Navbar = ({ onAuthRequired }) => {
 
     return (
         <>
-            <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60" dir={dir}>
+            <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl supports-backdrop-filter:bg-background/60" dir={dir}>
                 <div className="container mx-auto flex h-20 items-center justify-between px-6">
                     {/* Logo Section */}
                     <NavLink to="/" className="flex items-center gap-3 group">
@@ -167,24 +167,24 @@ const Navbar = ({ onAuthRequired }) => {
 
             {/* Mobile Menu Overlay - Refined UX & Aesthetics */}
             {isOpen && (
-                <div className="md:hidden fixed inset-0 top-[80px] z-[100] bg-background/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-hidden overscroll-none" dir={dir}>
-                    <div className="container mx-auto py-8 px-6 space-y-8 flex flex-col h-full overflow-hidden">
+                <div className="md:hidden fixed inset-0 top-[80px] z-100 bg-background/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto" dir={dir}>
+                    <div className="container mx-auto py-6 px-6 space-y-6 flex flex-col min-h-full">
                         {/* Navigation Links */}
-                        <div className="flex flex-col space-y-2 flex-grow overflow-hidden">
+                        <div className="flex flex-col space-y-1">
                             {filteredLinks.map((link) => (
                                 <NavLink
                                     key={link.to}
                                     to={link.to}
                                     onClick={() => setIsOpen(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-5 p-5 rounded-3xl transition-all duration-300 ${isActive 
+                                        `flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${isActive 
                                             ? "bg-primary/10 text-primary font-bold shadow-sm" 
                                             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                                         }`
                                     }
                                 >
-                                    <link.icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
-                                    <span className="text-xl font-medium">{link.label}</span>
+                                    <link.icon className="h-5 w-5 shrink-0" strokeWidth={1.5} />
+                                    <span className="text-lg font-medium">{link.label}</span>
                                 </NavLink>
                             ))}
                             {isAuthenticated && isAdmin && (
@@ -192,14 +192,14 @@ const Navbar = ({ onAuthRequired }) => {
                                     to="/admin"
                                     onClick={() => setIsOpen(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-5 p-5 rounded-3xl transition-all duration-300 ${isActive 
+                                        `flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${isActive 
                                             ? "bg-primary/10 text-primary font-bold shadow-sm" 
                                             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                                         }`
                                     }
                                 >
-                                    <Shield className="h-6 w-6 shrink-0" strokeWidth={1.5} />
-                                    <span className="text-xl font-medium">{t('navAdmin')}</span>
+                                    <Shield className="h-5 w-5 shrink-0" strokeWidth={1.5} />
+                                    <span className="text-lg font-medium">{t('navAdmin')}</span>
                                 </NavLink>
                             )}
                         </div>
@@ -209,7 +209,7 @@ const Navbar = ({ onAuthRequired }) => {
                             {/* Integrated User Section - No Redundant Trigger */}
                             {!isCallbackPage && !authLoading && (
                                 isAuthenticated ? (
-                                    <div className="bg-muted/30 p-6 rounded-[2.5rem] border border-border/10 space-y-6">
+                                    <div className="bg-muted/30 p-6 rounded-4xl border border-border/10 space-y-6">
                                         <div className="flex items-center gap-4 px-2">
                                             <div className="h-14 w-14 rounded-full border border-border/20 shadow-premium overflow-hidden">
                                                 {user?.avatar ? (
@@ -260,7 +260,7 @@ const Navbar = ({ onAuthRequired }) => {
                                             setIsOpen(false);
                                             onAuthRequired();
                                         }} 
-                                        className="w-full h-16 rounded-[2rem] text-xl shadow-premium bg-primary text-primary-foreground border-none font-bold" 
+                                        className="w-full h-16 rounded-4xl text-xl shadow-premium bg-primary text-primary-foreground border-none font-bold" 
                                     />
                                 )
                             )}
@@ -269,12 +269,12 @@ const Navbar = ({ onAuthRequired }) => {
                             <div className="flex items-center justify-between gap-4 pb-12">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" className="flex-1 gap-3 rounded-[1.5rem] h-14 border-border/20 bg-muted/30 hover:bg-muted/50 transition-all duration-300">
+                                        <Button variant="outline" className="flex-1 gap-3 rounded-3xl h-14 border-border/20 bg-muted/30 hover:bg-muted/50 transition-all duration-300">
                                             <Globe className="h-5 w-5" strokeWidth={1.5} />
                                             <span className="text-base font-semibold">{languages.find(l => l.code === language)?.label}</span>
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent dir={dir} className="z-110 rounded-[1.5rem] w-[var(--radix-dropdown-menu-trigger-width)] p-2">
+                                    <DropdownMenuContent dir={dir} className="z-110 rounded-3xl w-(--radix-dropdown-menu-trigger-width) p-2">
                                         {languages.map((lang) => (
                                             <DropdownMenuItem key={lang.code} onClick={() => {
                                                 setLanguage(lang.code);
@@ -289,7 +289,7 @@ const Navbar = ({ onAuthRequired }) => {
 
                                 <Button
                                     variant="outline"
-                                    className="flex-1 gap-3 rounded-[1.5rem] h-14 border-border/20 bg-muted/30 hover:bg-muted/50 transition-all duration-300"
+                                    className="flex-1 gap-3 rounded-3xl h-14 border-border/20 bg-muted/30 hover:bg-muted/50 transition-all duration-300"
                                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                                 >
                                     {theme === 'dark' ? <Moon className="h-5 w-5" strokeWidth={1.5} /> : <Sun className="h-5 w-5" strokeWidth={1.5} />}

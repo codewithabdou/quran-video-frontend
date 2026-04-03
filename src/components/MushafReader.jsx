@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
-import { 
-    ChevronLeft, 
-    ChevronRight, 
-    Search, 
-    Book, 
-    Bookmark, 
+import {
+    ChevronLeft,
+    ChevronRight,
+    Search,
+    Book,
+    Bookmark,
     Loader2,
     Settings2,
     Type,
     Maximize2,
-    ChevronDown
+    ChevronDown,
+    Plus,
+    Minus,
+    History,
 } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
@@ -39,9 +49,14 @@ const MushafReader = () => {
     const [isBookmarked, setIsBookmarked] = useState(() => {
         return parseInt(localStorage.getItem('mushaf_bookmark')) === currentPage;
     });
-    const [fontSize, setFontSize] = useState(window.innerWidth < 768 ? 24 : 32);
+    const [fontSize, setFontSize] = useState(() => {
+        return parseInt(localStorage.getItem('mushaf_font_size')) || (window.innerWidth < 768 ? 24 : 32);
+    });
     const [surahList, setSurahList] = useState([]);
-    
+    const [surahSearch, setSurahSearch] = useState('');
+    const [isSurahModalOpen, setIsSurahModalOpen] = useState(false);
+    const [currentSurah, setCurrentSurah] = useState({ name: '...', ar: '...' });
+
     const containerRef = useRef(null);
 
     useEffect(() => {
@@ -101,6 +116,21 @@ const MushafReader = () => {
         }
     }, [currentPage]);
 
+    // Update current surah info when page data changes
+    useEffect(() => {
+        if (pageData && pageData.ayahs && pageData.ayahs.length > 0) {
+            const firstAyah = pageData.ayahs[0];
+            setCurrentSurah({
+                name: firstAyah.surah.englishName,
+                ar: firstAyah.surah.name
+            });
+        }
+    }, [pageData]);
+
+    useEffect(() => {
+        localStorage.setItem('mushaf_font_size', fontSize.toString());
+    }, [fontSize]);
+
     const goToNextPage = () => {
         if (currentPage < 604) setCurrentPage(prev => prev + 1);
     };
@@ -108,6 +138,9 @@ const MushafReader = () => {
     const goToPrevPage = () => {
         if (currentPage > 1) setCurrentPage(prev => prev - 1);
     };
+
+    const lastReadPage = parseInt(localStorage.getItem('mushaf_last_page'));
+    const showResume = lastReadPage && lastReadPage !== currentPage;
 
     const jumpToSurah = (surahNumber) => {
         // AlQuran Cloud can return the first page of a surah
@@ -123,70 +156,125 @@ const MushafReader = () => {
 
     return (
         <div ref={containerRef} className="min-h-screen bg-zinc-50 dark:bg-black pt-24 pb-32 overflow-x-hidden" dir={dir}>
-            <div className="container mx-auto px-4">
-                {/* Header Controls */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center">
-                            <Book className="h-6 w-6 text-white dark:text-black" />
-                        </div>
-                        <div>
-                            <h1 className="type-display text-black dark:text-white leading-none">
-                                {t('navMushaf')}
-                            </h1>
-                            <p className="type-label text-zinc-500 dark:text-zinc-400 mt-2">
+            <div className="container mx-auto px-4 max-w-6xl">
+                {/* Hero Header Section */}
+                <div className="flex flex-col items-center text-center gap-10 mb-16 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="space-y-4 max-w-4xl">
+                        <h1 className={`${language === 'en' ? 'text-4xl md:text-6xl' : 'text-3xl md:text-5xl'} font-black uppercase tracking-tighter leading-none text-black dark:text-white`}>
+                            {t('navMushaf')}
+                        </h1>
+                        <div className="flex flex-col items-center gap-1">
+                            <p className="text-xl md:text-2xl font-black text-primary uppercase tracking-wider">
+                                {language === 'ar' ? currentSurah.ar : currentSurah.name}
+                            </p>
+                            <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 opacity-80">
                                 {t('page')} {currentPage} {t('of')} 604
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-sm border border-border/10">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="rounded-xl gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                                    <span className="font-bold">{t('jumpToSurah')}</span>
-                                    <ChevronDown className="h-4 w-4" />
+                    <div className="flex flex-wrap items-center justify-center gap-4 w-full">
+                        {/* Surah Selector Dialog */}
+                        <Dialog open={isSurahModalOpen} onOpenChange={setIsSurahModalOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="h-14 px-8 rounded-2xl bg-white dark:bg-zinc-900 border-none text-black dark:text-white font-bold text-lg shadow-premium hover:scale-[1.02] transition-all gap-3 group">
+                                    <Search className="h-5 w-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                                    <span>{language === 'ar' ? currentSurah.ar : currentSurah.name}</span>
+                                    <ChevronDown className="h-4 w-4 text-zinc-400" />
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 max-h-96 rounded-2xl p-2 bg-white dark:bg-zinc-900 border-none shadow-2xl">
-                                <ScrollArea className="h-80">
-                                    {surahList.map(s => (
-                                        <DropdownMenuItem 
-                                            key={s.number} 
-                                            onClick={() => jumpToSurah(s.number)}
-                                            className="rounded-xl p-3 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 flex justify-between items-center"
-                                        >
-                                            <span className="font-bold text-sm text-zinc-500">{s.number.toString().padStart(3, '0')}</span>
-                                            <div className="flex-1 px-3">
-                                                <p className="font-bold text-black dark:text-white">{s.englishName}</p>
-                                                <p className="text-[10px] uppercase text-zinc-400 font-black">{s.englishNameTranslation}</p>
-                                            </div>
-                                            <span className="text-lg font-quran text-black dark:text-white">{s.name}</span>
-                                        </DropdownMenuItem>
-                                    ))}
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl bg-white dark:bg-zinc-950 border-none rounded-4xl p-0 overflow-hidden shadow-2xl">
+                                <DialogHeader className="p-8 pb-0 text-center">
+                                    <DialogTitle className="text-3xl font-black uppercase tracking-tighter mb-4 text-black dark:text-white">{t('jumpToSurah')}</DialogTitle>
+                                    <div className="relative group">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
+                                        <Input
+                                            placeholder={t('searchReciter')}
+                                            className="pl-12 h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-2xl text-lg focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white transition-all"
+                                            value={surahSearch}
+                                            onChange={(e) => setSurahSearch(e.target.value)}
+                                        />
+                                    </div>
+                                </DialogHeader>
+                                <ScrollArea className="h-[60vh] p-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2">
+                                        {surahList.filter(s =>
+                                            s.englishName.toLowerCase().includes(surahSearch.toLowerCase()) ||
+                                            s.name.includes(surahSearch)
+                                        ).map(s => (
+                                            <button
+                                                key={s.number}
+                                                onClick={() => {
+                                                    jumpToSurah(s.number);
+                                                    setIsSurahModalOpen(false);
+                                                }}
+                                                className="flex items-center justify-between p-4 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group text-right"
+                                            >
+                                                <div className="flex items-center gap-4 text-left">
+                                                    <span className="text-xs font-black text-zinc-400 opacity-50">{s.number}</span>
+                                                    <div>
+                                                        <p className="font-bold text-black dark:text-white group-hover:text-primary transition-colors">{s.englishName}</p>
+                                                        <p className="text-[10px] uppercase text-zinc-500 font-black">{s.englishNameTranslation}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-2xl font-quran text-black dark:text-white">{s.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </ScrollArea>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                            </DialogContent>
+                        </Dialog>
 
-                        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1" />
-
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                            onClick={() => setFontSize(prev => Math.min(prev + 4, 64))}
-                        >
-                            <Type className="h-5 w-5" />
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                            onClick={() => setFontSize(prev => Math.max(prev - 4, 16))}
-                        >
-                            <span className="text-xs font-bold">A</span>
-                        </Button>
+                        {/* Font Size Controller (Azkar Style) */}
+                        <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-premium border-none">
+                            <div className="flex items-center gap-2 px-3 border-r border-zinc-100 dark:border-zinc-800 mr-1">
+                                <div className="flex items-baseline gap-0.5 text-zinc-500">
+                                    <span className="text-[10px] font-black">A</span>
+                                    <span className="text-sm font-black">A</span>
+                                </div>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setFontSize(prev => Math.max(prev - 2, 16))}
+                                className="h-10 w-10 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            >
+                                <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="text-sm font-black min-w-6 text-center text-black dark:text-white">{fontSize}</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setFontSize(prev => Math.min(prev + 2, 64))}
+                                className="h-10 w-10 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
+
+                    {/* Resume / Continue Reading Banner */}
+                    {showResume && (
+                        <div className="w-full max-w-xl animate-in zoom-in-95 fade-in duration-500">
+                            <Card
+                                onClick={() => setCurrentPage(lastReadPage)}
+                                className="p-4 bg-black dark:bg-zinc-100 rounded-4xl text-white dark:text-black flex items-center justify-between cursor-pointer group hover:scale-[1.02] transition-all shadow-xl"
+                            >
+                                <div className="flex items-center gap-4 ml-2">
+                                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                        <History className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] uppercase font-black tracking-widest opacity-60 leading-none mb-1">{t('lastRead')}</p>
+                                        <p className="font-bold text-sm">{t('page')} {lastReadPage}</p>
+                                    </div>
+                                </div>
+                                <Button size="sm" className="bg-primary text-white hover:bg-primary/95 font-bold rounded-xl px-6">
+                                    {t('continueReading')}
+                                </Button>
+                            </Card>
+                        </div>
+                    )}
                 </div>
 
                 {/* Reader Interface */}
@@ -198,39 +286,37 @@ const MushafReader = () => {
                         </div>
                     )}
 
-                    <div className="flex-1 p-8 md:p-16 flex flex-col items-center justify-center text-center">
+                    <div className="flex-1 p-8 md:p-14 lg:p-20 flex flex-col items-center">
                         {pageData && (
-                            <div 
-                                className="font-quran leading-[2.2] text-black dark:text-white whitespace-pre-wrap transition-all duration-300"
-                                style={{ 
+                            <div
+                                className="font-quran text-black dark:text-white transition-all duration-500 w-full"
+                                style={{
                                     fontSize: `${fontSize}px`,
-                                    direction: 'rtl'
+                                    direction: 'rtl',
+                                    lineHeight: '3.5',
+                                    textAlign: 'justify',
+                                    textJustify: 'inter-word'
                                 }}
                             >
                                 {pageData.ayahs.map((ayah, i) => (
-                                    <span key={ayah.number} className="inline-block relative mb-4 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg p-1 transition-colors cursor-default">
+                                    <React.Fragment key={ayah.number}>
                                         {/* Surah/Bismillah Header */}
-                                        {ayah.numberInSurah === 1 && ayah.surah.number !== 1 && (
-                                            <div className="w-full text-center mb-8 mt-12 first:mt-0">
-                                                <div className="bg-zinc-50 dark:bg-zinc-800 py-4 px-8 rounded-3xl inline-block border border-border/10 mb-4">
-                                                    <h2 className="text-2xl md:text-3xl font-black mb-1">{ayah.surah.name}</h2>
-                                                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">{ayah.surah.englishName}</p>
+                                        {ayah.numberInSurah === 1 && (
+                                            <div className="w-full text-center mt-16 first:mt-0 mb-12 block clear-both" style={{ textAlign: 'center' }}>
+                                                <div className="bg-zinc-50 dark:bg-zinc-800 py-6 px-12 rounded-4xl inline-block border border-border/10 mb-8 shadow-sm">
+                                                    <h2 className="text-3xl md:text-4xl font-arabic font-bold mb-2">{ayah.surah.name}</h2>
+                                                    <p className="text-xs font-black uppercase tracking-[0.3em] text-zinc-400">{ayah.surah.englishName}</p>
                                                 </div>
-                                                {ayah.surah.number !== 9 && (
-                                                    <p className="text-4xl md:text-5xl font-quran leading-loose text-black dark:text-white transition-all duration-500">
-                                                        بسم الله الرحمن الرحيم
-                                                    </p>
-                                                )}
                                             </div>
                                         )}
 
-                                        <span className={ayah.numberInSurah === 1 ? "block" : "inline"}>
+                                        <span className="inline">
                                             {ayah.text}
-                                            <span className="mx-2 inline-flex items-center justify-center h-8 w-8 rounded-full border border-zinc-200 dark:border-zinc-700 text-xs font-bold font-sans text-zinc-400 align-middle">
+                                            <span className="mx-3 inline-flex items-center justify-center h-10 w-10 rounded-full border-2 border-zinc-100 dark:border-zinc-800 text-[10px] font-black font-sans text-zinc-400 align-middle -translate-y-1">
                                                 {ayah.numberInSurah}
                                             </span>
                                         </span>
-                                    </span>
+                                    </React.Fragment>
                                 ))}
                             </div>
                         )}
@@ -238,33 +324,41 @@ const MushafReader = () => {
 
                     {/* Navigation Buttons */}
                     <div className="p-8 bg-zinc-50/50 dark:bg-zinc-800/30 border-t border-border/10 flex justify-between items-center">
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className="rounded-2xl h-14 px-8 gap-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all group shrink-0"
-                            onClick={dir === 'rtl' ? goToNextPage : goToPrevPage}
-                            disabled={dir === 'rtl' ? currentPage === 604 : currentPage === 1}
+                            onClick={goToPrevPage}
+                            disabled={currentPage === 1}
                         >
-                            <ChevronLeft className={`h-5 w-5 transition-transform ${dir === 'rtl' ? 'group-hover:-translate-x-1' : 'group-hover:-translate-x-1'}`} />
+                            {dir === 'rtl' ? (
+                                <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            ) : (
+                                <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                            )}
                             <span className="font-bold uppercase tracking-widest text-xs hidden sm:inline">
-                                {dir === 'rtl' ? t('goToNextPage') : t('goToPreviousPage')}
+                                {t('goToPreviousPage')}
                             </span>
                         </Button>
 
                         <div className="text-center shrink-0">
                             <span className="text-2xl font-black text-black dark:text-white">{currentPage}</span>
-                            <p className="text-[10px] font-black uppercase text-zinc-400 tracking-tighter tracking-widest mt-1">{t('page')}</p>
+                            <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mt-1">{t('page')}</p>
                         </div>
 
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className="rounded-2xl h-14 px-8 gap-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all group shrink-0"
-                            onClick={dir === 'rtl' ? goToPrevPage : goToNextPage}
-                            disabled={dir === 'rtl' ? currentPage === 1 : currentPage === 604}
+                            onClick={goToNextPage}
+                            disabled={currentPage === 604}
                         >
                             <span className="font-bold uppercase tracking-widest text-xs hidden sm:inline">
-                                {dir === 'rtl' ? t('goToPreviousPage') : t('goToNextPage')}
+                                {t('goToNextPage')}
                             </span>
-                            <ChevronRight className={`h-5 w-5 transition-transform ${dir === 'rtl' ? 'group-hover:translate-x-1' : 'group-hover:translate-x-1'}`} />
+                            {dir === 'rtl' ? (
+                                <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                            ) : (
+                                <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            )}
                         </Button>
                     </div>
                 </Card>
@@ -272,22 +366,21 @@ const MushafReader = () => {
 
             {/* Quick Actions Bar */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black dark:bg-white p-2 rounded-full shadow-2xl backdrop-blur-xl z-50">
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={toggleBookmark}
-                    className={`h-12 w-12 rounded-full transition-all ${
-                        isBookmarked 
-                        ? 'bg-white text-black dark:bg-black dark:text-white' 
-                        : 'text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/5'
-                    }`}
+                    className={`h-12 w-12 rounded-full transition-all ${isBookmarked
+                            ? 'bg-white text-black dark:bg-black dark:text-white'
+                            : 'text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/5'
+                        }`}
                 >
                     <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
                 </Button>
                 <div className="w-px h-6 bg-white/20 dark:bg-black/10" />
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-12 w-12 rounded-full text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/5 transition-all"
                     onClick={toggleFullscreen}
                 >

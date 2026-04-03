@@ -6,8 +6,9 @@ import {
     Pause, 
     Download, 
     Volume2, 
-    Music,
+    AudioLines,
     ChevronRight,
+    ChevronLeft,
     Headphones,
     X,
     Loader2
@@ -129,9 +130,9 @@ const QuranRadio = () => {
 
     return (
         <div className="container mx-auto px-4 py-8 pt-24 min-h-screen pb-32" dir={dir}>
-            <div className="flex flex-col items-center text-center gap-10 mb-16 w-full overflow-hidden px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex flex-col items-center text-center gap-10 mb-16 w-full px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="space-y-4 max-w-4xl">
-                    <h1 className={`${language === 'en' ? 'text-3xl sm:text-4xl md:text-6xl' : 'text-2xl sm:text-3xl md:text-5xl'} font-black uppercase tracking-tighter leading-[1.1] text-black dark:text-white break-words max-w-full`}>
+                    <h1 className={`${language === 'en' ? 'text-3xl sm:text-4xl md:text-6xl' : 'text-2xl sm:text-3xl md:text-5xl'} font-black uppercase tracking-tighter leading-[1.1] text-black dark:text-white wrap-break-word max-w-full`}>
                         {t('navQuran')}
                     </h1>
                 </div>
@@ -157,16 +158,16 @@ const QuranRadio = () => {
                     {filteredReciters.map((reciter) => (
                         <Card 
                             key={reciter.id}
-                            className="group p-6 bg-white dark:bg-zinc-900 border-border/10 hover:border-black dark:hover:border-white transition-all duration-500 cursor-pointer rounded-[2rem] shadow-sm hover:shadow-xl relative overflow-hidden"
+                            className="group p-6 bg-white dark:bg-zinc-900 border-border/10 hover:border-black dark:hover:border-white transition-all duration-500 cursor-pointer rounded-4xl shadow-sm hover:shadow-xl relative overflow-hidden"
                             onClick={() => handleSelectReciter(reciter)}
                         >
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Headphones className="h-12 w-12" />
+                            <div className={`absolute top-0 ${dir === 'rtl' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:opacity-10 transition-opacity`}>
+                                <Headphones className="h-16 w-16" />
                             </div>
                             
                             <div className="relative z-10">
                                 <div className="h-12 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                                    <Music className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
+                                    <AudioLines className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
                                 </div>
                                 <h3 className="type-card-title line-clamp-1 mb-1">
                                     {reciter.name}
@@ -177,7 +178,11 @@ const QuranRadio = () => {
                                 
                                 <div className="flex items-center type-label opacity-100 group-hover:text-black dark:group-hover:text-white transition-colors">
                                     <span>{reciter.moshaf[0]?.surah_list?.split(',').length || 0} {t('surahs')}</span>
-                                    <ChevronRight className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                                    {dir === 'rtl' ? (
+                                        <ChevronLeft className="h-4 w-4 mr-1 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all" />
+                                    ) : (
+                                        <ChevronRight className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                                    )}
                                 </div>
                             </div>
                         </Card>
@@ -190,7 +195,7 @@ const QuranRadio = () => {
                 <DialogContent className="max-w-2xl bg-white dark:bg-zinc-900 border-none rounded-[2.5rem] shadow-2xl p-0 overflow-hidden">
                     <DialogHeader className="p-8 pb-0">
                         <DialogTitle className="text-3xl font-black text-black dark:text-white uppercase tracking-tighter flex items-center gap-3">
-                            <Music className="h-8 w-8" />
+                            <AudioLines className="h-8 w-8" />
                             {selectedReciter?.name}
                         </DialogTitle>
                         <DialogDescription className="text-zinc-500 dark:text-zinc-400 text-base">

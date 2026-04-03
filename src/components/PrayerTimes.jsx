@@ -13,6 +13,7 @@ import {
     Moon,
     AlertCircle
 } from 'lucide-react';
+import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
@@ -25,6 +26,10 @@ const PrayerTimes = () => {
     const [nextPrayer, setNextPrayer] = useState(null);
     const [locationName, setLocationName] = useState(t('detecting'));
     const [countdown, setCountdown] = useState('');
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     const fetchTimings = useCallback(async (lat, lng) => {
         try {
@@ -40,6 +45,10 @@ const PrayerTimes = () => {
             setLocationName(geoData.address.city || geoData.address.town || geoData.address.state || t('myLocation'));
             
             setError(null);
+            
+            // Persist location
+            localStorage.setItem('prayer-lat', lat);
+            localStorage.setItem('prayer-lng', lng);
         } catch (err) {
             console.error('Failed to fetch timings:', err);
             setError('Failed to load prayer times');
@@ -49,20 +58,73 @@ const PrayerTimes = () => {
     }, []);
 
     useEffect(() => {
+        // Try to load from localStorage first
+        const savedLat = localStorage.getItem('prayer-lat');
+        const savedLng = localStorage.getItem('prayer-lng');
+
+        if (savedLat && savedLng) {
+            fetchTimings(parseFloat(savedLat), parseFloat(savedLng));
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            if (loading && !timings) {
+                setShowSearch(true);
+                setLoading(false);
+                setError(null);
+            }
+        }, 5000);
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => fetchTimings(pos.coords.latitude, pos.coords.longitude),
+                (pos) => {
+                    clearTimeout(timeoutId);
+                    fetchTimings(pos.coords.latitude, pos.coords.longitude);
+                },
                 (err) => {
+                    clearTimeout(timeoutId);
                     console.error('Geolocation error:', err);
-                    // Fallback to Algiers coordinates
-                    fetchTimings(36.7538, 3.0588);
-                    setLocationName(`Algiers (${t('system')})`);
-                }
+                    setShowSearch(true);
+                    setLoading(false);
+                },
+                { timeout: 5000 }
             );
         } else {
-            setError('Geolocation not supported');
+            clearTimeout(timeoutId);
+            setShowSearch(true);
+            setLoading(false);
         }
+
+        return () => clearTimeout(timeoutId);
     }, [fetchTimings]);
+
+    const handleSearch = async (query) => {
+        setSearchQuery(query);
+        if (query.length < 3) {
+            setSuggestions([]);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&accept-language=${language}`);
+            const data = await response.json();
+            setSuggestions(data);
+        } catch (err) {
+            console.error('Search failed:', err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const selectLocation = (loc) => {
+        const lat = parseFloat(loc.lat);
+        const lon = parseFloat(loc.lon);
+        fetchTimings(lat, lon);
+        setSuggestions([]);
+        setSearchQuery('');
+        setShowSearch(false);
+    };
 
     const updateCountdown = useCallback(() => {
         if (!timings) return;
@@ -131,7 +193,7 @@ const PrayerTimes = () => {
     return (
         <div className="container mx-auto px-4 py-8 pt-24 min-h-screen pb-32" dir={dir}>
             <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col items-center text-center gap-8 w-full max-w-5xl mx-auto overflow-hidden px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col items-center text-center gap-10 w-full max-w-5xl mx-auto px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Header Section */}
                 <div className="space-y-4 w-full">
                     <h1 className={`${language === 'en' ? 'text-4xl md:text-6xl' : 'text-3xl md:text-5xl'} font-black uppercase tracking-tighter leading-none text-black dark:text-white`}>
@@ -146,8 +208,50 @@ const PrayerTimes = () => {
                             <span className="w-1 h-1 rounded-full bg-zinc-300" />
                             <span>{hijriDate?.day} {language === 'ar' ? hijriDate?.month.ar : hijriDate?.month.en} {hijriDate?.year}</span>
                         </div>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="mt-2 text-[10px] uppercase font-black tracking-widest text-zinc-400 hover:text-black dark:hover:text-white"
+                            onClick={() => setShowSearch(!showSearch)}
+                        >
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {t('changeLocation')}
+                        </Button>
                     </div>
                 </div>
+
+                {/* Location Search Bar */}
+                {showSearch && (
+                    <div className="relative w-full max-w-xl group animate-in fade-in slide-in-from-top-4 duration-300">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
+                        <Input 
+                            placeholder={t('searchCity')}
+                            className="pl-12 h-14 bg-white dark:bg-zinc-900 border-none rounded-2xl text-lg focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white transition-all shadow-premium"
+                            value={searchQuery}
+                            onChange={(e) => handleSearch(e.target.value)}
+                        />
+                        {isSearching && (
+                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-zinc-400" />
+                        )}
+
+                        {suggestions.length > 0 && (
+                            <Card className="absolute z-50 w-full bg-white dark:bg-zinc-900 border-none shadow-2xl rounded-2xl overflow-hidden mt-2 p-2 space-y-1">
+                                {suggestions.map((loc) => (
+                                    <button
+                                        key={loc.place_id}
+                                        onClick={() => selectLocation(loc)}
+                                        className="w-full text-left p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors flex items-center gap-3 group"
+                                    >
+                                        <MapPin className="h-5 w-5 text-zinc-400 group-hover:text-black dark:group-hover:text-white" />
+                                        <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white">
+                                            {loc.display_name}
+                                        </span>
+                                    </button>
+                                ))}
+                            </Card>
+                        )}
+                    </div>
+                )}
 
                 {/* Hero: Next Prayer Card (Compact Row) */}
                 {nextPrayer && (

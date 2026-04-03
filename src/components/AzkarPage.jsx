@@ -8,11 +8,11 @@ import {
     ChevronRight,
     Plus,
     Minus,
-    Search,
-    BookOpen,
-    Sun,
-    Moon
+    Sun, 
+    Moon,
+    Search
 } from 'lucide-react';
+import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
@@ -155,18 +155,17 @@ const AzkarPage = () => {
                 {view === 'library' ? (
                     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {/* Header & Search */}
-                        <div className="flex flex-col items-center text-center gap-8 w-full overflow-hidden px-4">
-                            <h1 className={`${language === 'en' ? 'text-3xl sm:text-4xl md:text-6xl' : 'text-2xl sm:text-3xl md:text-5xl'} font-black uppercase tracking-tighter leading-[1.1] text-black dark:text-white break-words max-w-full`} dangerouslySetInnerHTML={{ __html: t('supplicationLibrary') }} />
+                        <div className="flex flex-col items-center text-center gap-8 w-full px-4">
+                            <h1 className={`${language === 'en' ? 'text-3xl sm:text-4xl md:text-6xl' : 'text-2xl sm:text-3xl md:text-5xl'} font-black uppercase tracking-tighter leading-[1.1] text-black dark:text-white wrap-break-word max-w-full`} dangerouslySetInnerHTML={{ __html: t('supplicationLibrary') }} />
                             
                             {/* Search Bar */}
                             <div className="relative w-full max-w-xl group">
-                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
-                                <input 
-                                    type="text"
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
+                                <Input 
                                     placeholder={t('searchCategoriesPlaceholder')}
+                                    className="pl-12 h-14 bg-white dark:bg-zinc-900 border-none rounded-2xl text-lg focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white transition-all shadow-premium"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-white dark:bg-zinc-900 border-none rounded-[2rem] py-6 pl-16 pr-8 text-lg font-bold shadow-sm focus:ring-2 focus:ring-black dark:focus:ring-white transition-all outline-none text-center"
                                 />
                             </div>
                         </div>
@@ -186,7 +185,7 @@ const AzkarPage = () => {
                                              <BookOpen className="h-12 w-12 text-white dark:text-black mb-2" />}
                                             <h3 className="text-4xl font-arabic font-bold text-white dark:text-black leading-tight">{cat}</h3>
                                         </div>
-                                        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent dark:from-black/5 pointer-events-none" />
+                                        <div className="absolute inset-0 bg-linear-to-b from-white/5 to-transparent dark:from-black/5 pointer-events-none" />
                                     </Card>
                                 );
                             })}
@@ -199,7 +198,7 @@ const AzkarPage = () => {
                                     <Card 
                                         key={cat}
                                         onClick={() => handleSelectCategory(cat)}
-                                        className="p-6 rounded-[2rem] bg-white dark:bg-zinc-900 border-none hover:shadow-xl transition-all cursor-pointer group flex items-center justify-center text-center"
+                                        className="p-6 rounded-4xl bg-white dark:bg-zinc-900 border-none hover:shadow-xl transition-all cursor-pointer group flex items-center justify-center text-center"
                                     >
                                         <span className="text-lg font-arabic font-bold text-zinc-600 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white transition-colors">
                                             {cat}
@@ -212,25 +211,24 @@ const AzkarPage = () => {
                 ) : (
                     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-700">
                         {/* Detail Header */}
-                        <div className="flex flex-col gap-8 border-b border-zinc-100 dark:border-zinc-800 pb-8">
-                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                                <div className="space-y-4 flex-1">
-                                    <Button 
-                                        variant="ghost" 
-                                        onClick={() => setView('library')}
-                                        className="w-fit flex items-center gap-2 text-zinc-400 hover:text-black dark:hover:text-white transition-colors pl-0 -mt-4 mb-2"
-                                    >
-                                        <ChevronRight className="h-5 w-5 rotate-180" />
-                                        <span className="text-xs uppercase font-black tracking-widest">{t('backToLibrary')}</span>
-                                    </Button>
-                                    
-                                    <h2 className={`text-5xl md:text-6xl font-arabic font-bold text-black dark:text-white leading-tight ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                                        {selectedCategory}
-                                    </h2>
-                                </div>
+                        <div className={`flex flex-col gap-8 border-b border-zinc-100 dark:border-zinc-800 pb-8 items-center text-center md:items-end md:justify-between ${language !== 'ar' ? 'md:flex-row-reverse' : 'md:flex-row'}${language !== 'ar' ? '' : ' md:text-right'} gap-6`}>
+                            <div className="space-y-4 flex-1 w-full flex flex-col items-center md:items-start md:text-left">
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setView('library')}
+                                    className={`w-fit flex items-center gap-2 text-zinc-400 hover:text-black dark:hover:text-white transition-colors ${language === 'ar' ? 'ml-0 -mr-4' : 'pl-0'} -mt-4 mb-2`}
+                                >
+                                    <ChevronRight className={`h-5 w-5 ${language === 'ar' ? '' : 'rotate-180'}`} />
+                                    <span className="text-xs uppercase font-black tracking-widest">{t('backToLibrary')}</span>
+                                </Button>
+                                
+                                <h2 className={`text-5xl md:text-6xl font-arabic font-bold text-black dark:text-white leading-tight w-full ${language === 'ar' ? 'md:text-right' : 'md:text-left'}`}>
+                                    {selectedCategory}
+                                </h2>
+                            </div>
 
-                                {/* Font Size Controls */}
-                                <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 self-end md:self-auto w-fit">
+                            {/* Font Size Controls */}
+                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 w-fit shrink-0">
                                     <div className="flex items-center gap-2 px-3 border-r border-zinc-100 dark:border-zinc-800 mr-1">
                                         <div className="flex items-baseline gap-0.5">
                                             <span className="text-[10px] font-black">A</span>
@@ -245,7 +243,7 @@ const AzkarPage = () => {
                                     >
                                         <Minus className="h-4 w-4" />
                                     </Button>
-                                    <span className="text-sm font-black min-w-[1.5rem] text-center">{fontSize}</span>
+                                    <span className="text-sm font-black min-w-6 text-center">{fontSize}</span>
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
@@ -256,7 +254,6 @@ const AzkarPage = () => {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
 
                         {/* Adhkar List */}
                         <div className="space-y-6">

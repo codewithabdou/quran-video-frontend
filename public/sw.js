@@ -1,3 +1,23 @@
+// PWA Lifecycle Handlers
+self.addEventListener('install', function (event) {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function (event) {
+    event.waitUntil(clients.claim());
+});
+
+self.addEventListener('fetch', function (event) {
+    // Pass-through fetch to satisfy PWA criteria without aggressive offline caching breaking dynamic APIs
+    if (event.request.method === 'GET' && event.request.url.startsWith('http')) {
+        event.respondWith(
+            fetch(event.request).catch(function () {
+                return caches.match(event.request);
+            })
+        );
+    }
+});
+
 self.addEventListener('push', function (event) {
     console.log('[SW] Push event received');
     

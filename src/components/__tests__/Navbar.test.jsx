@@ -21,13 +21,13 @@ const renderWithProviders = (component) => {
 describe('Navbar', () => {
     it('should render without crashing', () => {
         renderWithProviders(<Navbar />);
-        // Expect either Sun or Moon label depending on theme
-        expect(screen.getByText(/Light|Dark/i)).toBeInTheDocument();
+        // Expect either Sun or Moon label depending on theme (present on both desktop and mobile)
+        expect(screen.getAllByText(/Light|Dark/i).length).toBeGreaterThan(0);
     });
 
     it('should render language selector button', () => {
         renderWithProviders(<Navbar />);
-        expect(screen.getByText(/English|Français|العربية/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/English|Français|العربية/i).length).toBeGreaterThan(0);
     });
 
     it('should render navigation links', () => {

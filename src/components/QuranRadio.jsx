@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
+import { RECITERS } from '../lib/constants';
+import { matchesReciter } from '../lib/searchUtils';
 import { 
     Search, 
     Play, 
@@ -67,10 +69,7 @@ const QuranRadio = () => {
     }, [language]);
 
     const filteredReciters = useMemo(() => {
-        return reciters.filter(r => 
-            r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (r.mosque && r.mosque.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
+        return reciters.filter(r => matchesReciter(r, searchQuery, RECITERS));
     }, [reciters, searchQuery]);
 
     const handleSelectReciter = (reciter) => {
@@ -234,7 +233,7 @@ const QuranRadio = () => {
 
             {/* Persistent Audio Player */}
             {audioMetadata && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-50 animate-in slide-in-from-bottom-8 duration-500">
+                <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-50 animate-in slide-in-from-bottom-8 duration-500">
                     <div className="bg-black/90 dark:bg-white inset-0 absolute blur-xl opacity-20 -z-10 rounded-full" />
                     <div className="bg-white dark:bg-zinc-900 border border-border/10 rounded-full p-4 pr-8 shadow-2xl flex items-center justify-between gap-6 backdrop-blur-xl">
                         <div className="flex items-center gap-4 flex-1 min-w-0">

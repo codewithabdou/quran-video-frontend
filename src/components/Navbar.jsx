@@ -70,10 +70,10 @@ const Navbar = ({ onAuthRequired }) => {
     return (
         <>
             <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl supports-backdrop-filter:bg-background/60" dir={dir}>
-                <div className="container mx-auto flex h-20 items-center justify-between px-6">
+                <div className="container mx-auto flex h-16 md:h-20 items-center justify-between px-4 sm:px-6">
                     {/* Logo Section */}
                     <NavLink to="/" className="flex items-center gap-3 group">
-                        <img src="/logo.png" alt={t('logoAlt')} className="h-16 w-auto object-contain transition-transform group-hover:scale-105 duration-300" />
+                        <img src="/logo.png" alt={t('logoAlt')} className="h-12 md:h-16 w-auto object-contain transition-transform group-hover:scale-105 duration-300" />
                     </NavLink>
 
                     {/* Desktop Navigation - Pill Shaped */}
@@ -134,15 +134,16 @@ const Navbar = ({ onAuthRequired }) => {
                         </DropdownMenu>
 
                         {/* Theme Toggle */}
-                            <Button
-                                variant="ghost"
-                                className="h-10 px-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-3 font-medium"
+                        <Button
+                            variant="ghost"
+                            className="h-10 px-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-3 font-medium"
                             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                         >
-                            <div className="relative h-[1.1rem] w-[1.1rem]">
-                                <Sun className="absolute inset-0 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" strokeWidth={1.5} />
-                                <Moon className="absolute inset-0 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" strokeWidth={1.5} />
-                            </div>
+                            {theme === 'dark' ? (
+                                <Moon className="h-[1.1rem] w-[1.1rem]" strokeWidth={1.5} />
+                            ) : (
+                                <Sun className="h-[1.1rem] w-[1.1rem]" strokeWidth={1.5} />
+                            )}
                             <span className="text-sm">{theme === 'dark' ? t('dark') : t('light')}</span>
                         </Button>
 
@@ -156,9 +157,51 @@ const Navbar = ({ onAuthRequired }) => {
                         </div>
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center">
-                        <Button variant="ghost" size="icon" onClick={toggleMenu} className="h-10 w-10 rounded-xl hover:bg-primary/10 transition-colors">
+                    {/* Mobile Controls & Menu Button */}
+                    <div className="md:hidden flex items-center gap-2">
+                        {/* Mobile Language Selector Pill */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center gap-2 h-8 px-3.5 rounded-full border border-border/40 bg-muted/25 hover:bg-muted/50 transition-all text-xs font-medium text-foreground shadow-xs active:scale-95 shrink-0"
+                                    aria-label="Change language"
+                                >
+                                    <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                                    <span>{languages.find(l => l.code === language)?.label}</span>
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" dir={dir} className="z-110 rounded-2xl p-1.5 border-border/10 shadow-premium bg-card/95 backdrop-blur-xl min-w-[130px]">
+                                {languages.map((lang) => (
+                                    <DropdownMenuItem
+                                        key={lang.code}
+                                        onClick={() => setLanguage(lang.code)}
+                                        className={`flex items-center gap-2.5 cursor-pointer rounded-xl px-3 py-2 transition-colors text-xs ${language === lang.code ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted'}`}
+                                    >
+                                        <span className="text-base">{lang.flag}</span>
+                                        <span>{lang.label}</span>
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* Mobile Theme Toggle Pill */}
+                        <button
+                            type="button"
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            className="inline-flex items-center gap-2 h-8 px-3.5 rounded-full border border-border/40 bg-muted/25 hover:bg-muted/50 transition-all text-xs font-medium text-foreground shadow-xs active:scale-95 shrink-0"
+                            aria-label="Toggle theme"
+                        >
+                            {theme === 'dark' ? (
+                                <Moon className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                            ) : (
+                                <Sun className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                            )}
+                            <span>{theme === 'dark' ? t('dark') : t('light')}</span>
+                        </button>
+
+                        {/* Mobile Menu Button */}
+                        <Button variant="ghost" size="icon" onClick={toggleMenu} className="h-9 w-9 rounded-xl hover:bg-primary/10 transition-colors shrink-0" aria-label="Toggle menu">
                             {isOpen ? <X className="h-5 w-5" strokeWidth={1.5} /> : <Menu className="h-5 w-5" strokeWidth={1.5} />}
                         </Button>
                     </div>
@@ -167,7 +210,7 @@ const Navbar = ({ onAuthRequired }) => {
 
             {/* Mobile Menu Overlay - Refined UX & Aesthetics */}
             {isOpen && (
-                <div className="md:hidden fixed inset-0 top-[80px] z-100 bg-background/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto" dir={dir}>
+                <div className="md:hidden fixed inset-0 top-[64px] md:top-[80px] z-100 bg-background/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto" dir={dir}>
                     <div className="container mx-auto py-6 px-6 space-y-6 flex flex-col min-h-full">
                         {/* Navigation Links */}
                         <div className="flex flex-col space-y-1">

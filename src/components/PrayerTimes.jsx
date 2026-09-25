@@ -256,18 +256,18 @@ const PrayerTimes = () => {
                 {/* Hero: Next Prayer Card (Compact Row) */}
                 {nextPrayer && (
                     <div className="w-full max-w-2xl mx-auto">
-                        <div className="bg-black dark:bg-zinc-100 p-6 md:p-8 rounded-3xl text-white dark:text-black flex items-center justify-between shadow-xl relative overflow-hidden transition-all hover:scale-[1.01] duration-500 group border-4 border-primary">
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 bg-white/10 dark:bg-black/5 rounded-2xl flex items-center justify-center shrink-0">
-                                    {React.createElement(prayerIcons[nextPrayer.name] || Sunrise, { className: "h-6 w-6 text-primary" })}
+                        <div className="bg-black dark:bg-zinc-100 p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl text-white dark:text-black flex items-center justify-between gap-3 shadow-xl relative overflow-hidden transition-all hover:scale-[1.01] duration-500 group border-2 sm:border-4 border-primary">
+                            <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
+                                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-white/10 dark:bg-black/5 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                                    {React.createElement(prayerIcons[nextPrayer.name] || Sunrise, { className: "h-5 w-5 sm:h-6 sm:w-6 text-primary" })}
                                 </div>
-                                <h2 className="text-3xl md:text-4xl font-arabic font-bold text-white dark:text-black leading-none">
+                                <h2 className="text-xl sm:text-3xl md:text-4xl font-arabic font-bold text-white dark:text-black leading-none truncate">
                                     {t(nextPrayer.name.toLowerCase())}
                                 </h2>
                             </div>
                             
-                            <div className="flex items-center gap-3">
-                                <p className="text-4xl md:text-5xl font-black tracking-tighter font-mono text-primary">
+                            <div className="flex items-center shrink-0">
+                                <p dir="ltr" className="text-xl sm:text-3xl md:text-5xl font-black tracking-tight font-mono text-primary tabular-nums select-none">
                                     {countdown}
                                 </p>
                             </div>

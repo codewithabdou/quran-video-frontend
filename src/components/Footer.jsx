@@ -6,7 +6,7 @@ const Footer = () => {
     const { t, dir } = useThemeLanguage();
 
     return (
-        <footer className="w-full bg-card/30 backdrop-blur-md border-t border-border/10 py-12 transition-all duration-500" dir={dir}>
+        <footer className="w-full bg-card/30 backdrop-blur-md border-t border-border/10 pt-12 pb-32 md:pb-12 transition-all duration-500" dir={dir}>
             <div className="container mx-auto px-6 flex flex-col items-center justify-center gap-2 text-center">
 
                 {/* Main Credit */}

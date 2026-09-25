@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
+import { SURAHS } from '../lib/constants';
+import { matchesSurah } from '../lib/searchUtils';
 import {
     ChevronLeft,
     ChevronRight,
@@ -52,7 +54,15 @@ const MushafReader = () => {
     const [fontSize, setFontSize] = useState(() => {
         return parseInt(localStorage.getItem('mushaf_font_size')) || (window.innerWidth < 768 ? 24 : 32);
     });
-    const [surahList, setSurahList] = useState([]);
+    const [surahList, setSurahList] = useState(() =>
+        SURAHS.map((s) => ({
+            number: s.number,
+            name: s.arabicName,
+            englishName: s.name,
+            englishNameTranslation: s.englishName,
+            numberOfAyahs: s.ayahs,
+        }))
+    );
     const [surahSearch, setSurahSearch] = useState('');
     const [isSurahModalOpen, setIsSurahModalOpen] = useState(false);
     const [currentSurah, setCurrentSurah] = useState({ name: '...', ar: '...' });
@@ -189,38 +199,41 @@ const MushafReader = () => {
                                     <div className="relative group">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
                                         <Input
-                                            placeholder={t('searchReciter')}
-                                            className="pl-12 h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-2xl text-lg focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white transition-all"
+                                            placeholder={t('searchSurah')}
+                                            className="pl-12 h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-2xl text-lg focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white transition-all text-foreground"
                                             value={surahSearch}
                                             onChange={(e) => setSurahSearch(e.target.value)}
                                         />
                                     </div>
                                 </DialogHeader>
                                 <ScrollArea className="h-[60vh] p-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2">
-                                        {surahList.filter(s =>
-                                            s.englishName.toLowerCase().includes(surahSearch.toLowerCase()) ||
-                                            s.name.includes(surahSearch)
-                                        ).map(s => (
-                                            <button
-                                                key={s.number}
-                                                onClick={() => {
-                                                    jumpToSurah(s.number);
-                                                    setIsSurahModalOpen(false);
-                                                }}
-                                                className="flex items-center justify-between p-4 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group text-right"
-                                            >
-                                                <div className="flex items-center gap-4 text-left">
-                                                    <span className="text-xs font-black text-zinc-400 opacity-50">{s.number}</span>
-                                                    <div>
-                                                        <p className="font-bold text-black dark:text-white group-hover:text-primary transition-colors">{s.englishName}</p>
-                                                        <p className="text-[10px] uppercase text-zinc-500 font-black">{s.englishNameTranslation}</p>
+                                    {surahList.filter(s => matchesSurah(s, surahSearch)).length === 0 ? (
+                                        <div className="py-16 text-center text-muted-foreground text-base font-semibold">
+                                            {language === 'ar' ? 'لم يتم العثور على أي سورة مطابقة' : 'No surahs found matching your search'}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2">
+                                            {surahList.filter(s => matchesSurah(s, surahSearch)).map(s => (
+                                                <button
+                                                    key={s.number}
+                                                    onClick={() => {
+                                                        jumpToSurah(s.number);
+                                                        setIsSurahModalOpen(false);
+                                                    }}
+                                                    className="flex items-center justify-between p-4 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group text-right"
+                                                >
+                                                    <div className="flex items-center gap-4 text-left">
+                                                        <span className="text-xs font-black text-zinc-400 opacity-50">{s.number}</span>
+                                                        <div>
+                                                            <p className="font-bold text-black dark:text-white group-hover:text-primary transition-colors">{s.englishName}</p>
+                                                            <p className="text-[10px] uppercase text-zinc-500 font-black">{s.englishNameTranslation}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <span className="text-2xl font-quran text-black dark:text-white">{s.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                                    <span className="text-2xl font-quran text-black dark:text-white">{s.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </ScrollArea>
                             </DialogContent>
                         </Dialog>
@@ -365,7 +378,7 @@ const MushafReader = () => {
             </div>
 
             {/* Quick Actions Bar */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black dark:bg-white p-2 rounded-full shadow-2xl backdrop-blur-xl z-50">
+            <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black dark:bg-white p-2 rounded-full shadow-2xl backdrop-blur-xl z-50">
                 <Button
                     variant="ghost"
                     size="icon"

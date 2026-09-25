@@ -125,4 +125,26 @@ describe('videoGeneratorSchema', () => {
         const result = videoGeneratorSchema.safeParse(defaultBgData);
         expect(result.success).toBe(true);
     });
+
+    it('should default text_mode to bilingual and accept arabic_only', () => {
+        const baseData = {
+            surah: '1',
+            ayah_start: 1,
+            ayah_end: 7,
+            reciter_id: 'ar.alafasy',
+            platform: 'reel',
+            resolution: '1080',
+        };
+
+        const defaultResult = videoGeneratorSchema.safeParse(baseData);
+        expect(defaultResult.success).toBe(true);
+        expect(defaultResult.data.text_mode).toBe('bilingual');
+
+        const arabicOnlyResult = videoGeneratorSchema.safeParse({ ...baseData, text_mode: 'arabic_only' });
+        expect(arabicOnlyResult.success).toBe(true);
+        expect(arabicOnlyResult.data.text_mode).toBe('arabic_only');
+
+        const invalidResult = videoGeneratorSchema.safeParse({ ...baseData, text_mode: 'french_only' });
+        expect(invalidResult.success).toBe(false);
+    });
 });

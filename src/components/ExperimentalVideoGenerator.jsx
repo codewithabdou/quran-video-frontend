@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Loader2, Video, Download, BookOpen, AlertCircle, AudioLines, Share2, XCircle, Zap, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Audio } from "react-loader-spinner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -41,6 +40,13 @@ import BackgroundSelector from "./BackgroundSelector";
 import { Progress } from "@/components/ui/progress";
 import axios from "axios";
 import NotificationPermissionDialog from "./NotificationPermissionDialog";
+import VerseSearch from "./generator/VerseSearch";
+import VerseRangeReview from "./generator/VerseRangeReview";
+import RenderOptions from "./generator/RenderOptions";
+import PreviewPlayer from "./generator/PreviewPlayer";
+import PreflightSummary from "./generator/PreflightSummary";
+import GenerationResult from "./generator/GenerationResult";
+import { getVideoPlan, getVideoPreflight } from "@/api/video";
 
 const ExperimentalVideoGenerator = () => {
     const { t, dir, language } = useThemeLanguage();
@@ -61,11 +67,23 @@ const ExperimentalVideoGenerator = () => {
     // Ref to track stuck progress detection
     const lastProgressRef = useRef({ value: 0, timestamp: Date.now() });
     const stuckTimerRef = useRef(null);
+    // Ref to auto-scroll smoothly to the result section when generation starts or completes
+    const resultRef = useRef(null);
 
     // Keep loadingRef in sync with loading state
     useEffect(() => {
         loadingRef.current = loading;
     }, [loading]);
+
+    // Auto-scroll down to the result component when generating or when completed video arrives
+    useEffect(() => {
+        if (loading || videoUrl) {
+            const timer = setTimeout(() => {
+                resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 180);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, videoUrl]);
 
     // Handle beforeunload (tab close/refresh) and unmount
     useEffect(() => {
@@ -78,7 +96,7 @@ const ExperimentalVideoGenerator = () => {
             }
         };
 
-        const handleUnload = () => {
+        const handlePageHide = () => {
             if (loadingRef.current) {
                 // If they chose to leave/reload, explicitly cancel the job on the server
                 try {
@@ -93,18 +111,18 @@ const ExperimentalVideoGenerator = () => {
                     localStorage.removeItem('active_generation_id');
                     localStorage.removeItem('active_generation_timestamp');
                 } catch (e) {
-                    console.error("Failed to send cancel signal on unload", e);
+                    console.error("Failed to send cancel signal on pagehide", e);
                 }
             }
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
-        window.addEventListener('unload', handleUnload);
+        window.addEventListener('pagehide', handlePageHide);
 
         // Cleanup on unmount
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            window.removeEventListener('unload', handleUnload);
+            window.removeEventListener('pagehide', handlePageHide);
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
             }
@@ -270,11 +288,86 @@ const ExperimentalVideoGenerator = () => {
             reciter_id: "ar.alafasy",
             platform: "reel",
             resolution: "720",
+            text_mode: "bilingual",
             background_url: "default", // Will use backend fallback video
         },
     });
 
-    const selectedPlatform = form.watch('platform');
+    const [plan, setPlan] = useState(null);
+    const [timedPlan, setTimedPlan] = useState(null);
+    const [loadingPlan, setLoadingPlan] = useState(false);
+    const [loadingPreflight, setLoadingPreflight] = useState(false);
+
+    const watchedSurah = form.watch("surah");
+    const watchedStart = form.watch("ayah_start");
+    const watchedEnd = form.watch("ayah_end");
+    const watchedPlatform = form.watch("platform");
+    const watchedResolution = form.watch("resolution");
+    const watchedReciter = form.watch("reciter_id");
+    const watchedTextMode = form.watch("text_mode");
+    const watchedBackground = form.watch("background_url");
+
+    const fetchCurrentPlan = useCallback(async () => {
+        const surah = form.getValues("surah");
+        const start = parseInt(form.getValues("ayah_start"), 10);
+        const end = parseInt(form.getValues("ayah_end"), 10);
+        const platform = form.getValues("platform");
+        const resolution = parseInt(form.getValues("resolution"), 10);
+        const textMode = form.getValues("text_mode") || "bilingual";
+        const reciterId = form.getValues("reciter_id");
+
+        if (!surah || !start || !end || isNaN(start) || isNaN(end) || start > end) {
+            return;
+        }
+
+        setLoadingPlan(true);
+        try {
+            const planData = await getVideoPlan({
+                surah,
+                ayah_start: start,
+                ayah_end: end,
+                platform,
+                resolution,
+                textMode,
+            });
+            setPlan(planData);
+            setLoadingPlan(false);
+
+            if (reciterId) {
+                setLoadingPreflight(true);
+                try {
+                    const preflightData = await getVideoPreflight({
+                        surah,
+                        ayah_start: start,
+                        ayah_end: end,
+                        reciter_id: reciterId,
+                        platform,
+                        resolution,
+                        textMode,
+                    });
+                    const resolved = preflightData?.timedPlan || preflightData;
+                    setTimedPlan(resolved);
+                } catch (e) {
+                    console.warn("Preflight audio probe error:", e);
+                    setTimedPlan(null);
+                } finally {
+                    setLoadingPreflight(false);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load render plan:", err);
+            setLoadingPlan(false);
+            setLoadingPreflight(false);
+        }
+    }, [form]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchCurrentPlan();
+        }, 280);
+
+        return () => clearTimeout(timer);
+    }, [watchedSurah, watchedStart, watchedEnd, watchedPlatform, watchedResolution, watchedReciter, watchedTextMode, fetchCurrentPlan]);
 
     const startGeneration = async (data) => {
         setLoading(true);
@@ -364,6 +457,9 @@ const ExperimentalVideoGenerator = () => {
                 resolution: parseInt(data.resolution),
                 reciter_id: data.reciter_id,
                 translation_id: "en.sahih",
+                text_mode: data.text_mode || 'bilingual',
+                plan_hash: timedPlan?.planHash || timedPlan?.timedPlan?.planHash || plan?.planHash,
+                timing_overrides: timedPlan?.timingOverrides || timedPlan?.timedPlan?.timingOverrides,
                 request_id: requestId,
                 background_url: finalBackgroundUrl,
                 platform: data.platform,
@@ -393,6 +489,9 @@ const ExperimentalVideoGenerator = () => {
             } else if (err.response?.status === 429 && err.response?.data?.error?.existingJobId) {
                 // If they hit the concurrency limiter (has an active job), open the cancel dialog
                 setShowActiveJobDialog(true);
+            } else if (err.response?.status === 409) {
+                toast.error(t('planLocked') || 'Plan layout changed. Updating preview...');
+                fetchCurrentPlan();
             } else {
                 // Determine standard error message
                 let errorMsg = t('errorSomethingWentWrong');
@@ -581,7 +680,7 @@ const ExperimentalVideoGenerator = () => {
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[5%] right-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px] animate-pulse duration-[12s]"></div>
                 <div className="absolute bottom-[10%] left-[5%] w-[45%] h-[45%] rounded-full bg-sacred-terracotta/5 dark:bg-sacred-gold/5 blur-[100px] animate-pulse duration-[18s] delay-700"></div>
-                <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+                <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] pointer-events-none bg-[url('/noise.svg')]"></div>
             </div>
 
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 md:px-6 py-12 md:py-16">
@@ -597,374 +696,125 @@ const ExperimentalVideoGenerator = () => {
                         </p>
                     </div>
 
-                    <div className="flex flex-col lg:grid lg:grid-cols-[1.1fr_0.9fr] gap-8 md:gap-12 items-start w-full mx-auto">
-                        {/* Form Section */}
-                        <Card className="w-full border-none bg-card/50 backdrop-blur-xl shadow-premium animate-in fade-in slide-in-from-left-8 duration-1000 delay-100 rounded-[2rem] overflow-hidden">
-                            <CardContent className="p-8">
-                                <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                                        
-                                        {/* Surah & Platform Row */}
-                                        <div className="grid sm:grid-cols-2 gap-6">
-                                            <FormField
-                                                control={form.control}
-                                                name="surah"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('surah')}</FormLabel>
-                                                        <Select 
-                                                            onValueChange={(value) => {
-                                                                field.onChange(value);
-                                                                const surah = SURAHS.find(s => String(s.number) === value);
-                                                                if (surah) {
-                                                                    const currentEnd = form.getValues("ayah_end");
-                                                                    const currentStart = form.getValues("ayah_start");
-
-                                                                    // Only update if current values are out of bounds for the new surah
-                                                                    if (currentEnd > surah.ayahs || !currentEnd) {
-                                                                        form.setValue("ayah_end", surah.ayahs);
-                                                                    }
-                                                                    
-                                                                    if (currentStart > surah.ayahs) {
-                                                                        form.setValue("ayah_start", 1);
-                                                                    }
-                                                                }
-                                                            }} 
-                                                            defaultValue={field.value}
-                                                        >
-                                                            <FormControl>
-                                                                <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
-                                                                    <SelectValue placeholder={t('selectSurah')} />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl max-h-[400px]">
-                                                                {SURAHS.map((surah) => (
-                                                                    <SelectItem key={surah.number} value={String(surah.number)} className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
-                                                                        <div className="flex items-center w-full gap-4">
-                                                                            <span className="text-[10px] font-bold w-6 h-6 shrink-0 flex items-center justify-center bg-muted rounded-full group-hover:bg-primary/20 transition-colors">{surah.number}</span>
-                                                                            <span className="flex-1 font-medium text-sm text-left rtl:text-right">{language === 'ar' ? surah.arabicName : surah.name} {language !== 'ar' && `(${surah.englishName})`}</span>
-                                                                            <span className="font-arabic text-lg text-primary/60 shrink-0">{surah.arabicName}</span>
-                                                                        </div>
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-
-                                            <FormField
-                                                control={form.control}
-                                                name="platform"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('platform')}</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                            <FormControl>
-                                                                <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
-                                                                    <SelectValue placeholder={t('selectPlatform')} />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl">
-                                                                <SelectItem value="reel" className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <Smartphone className="w-4 h-4" />
-                                                                        <span>{t('platformReel')}</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="youtube" className="rounded-xl p-3 focus:bg-primary/10 focus:text-primary">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <Video className="w-4 h-4" />
-                                                                        <span>{t('platformYoutube')}</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-
-                                        {/* Ayah Range Row */}
-                                        <div className="grid grid-cols-2 gap-6 p-6 rounded-3xl bg-muted/20 border border-border/5">
-                                            {/* Pre-calculate max ayahs for validation */}
-                                            {(() => {
-                                                const selectedSurahNum = form.watch("surah");
-                                                const surahObj = SURAHS.find(s => String(s.number) === String(selectedSurahNum));
-                                                const maxAyahs = surahObj ? surahObj.ayahs : 286;
-
-                                                return (
-                                                    <>
-                                                        <FormField
-                                                            control={form.control}
-                                                            name="ayah_start"
-                                                            render={({ field }) => (
-                                                                <FormItem className="space-y-3">
-                                                                    <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('startAyah')}</FormLabel>
-                                                                    <FormControl>
-                                                                        <Input
-                                                                            type="number"
-                                                                            min="1"
-                                                                            max={maxAyahs}
-                                                                            {...field}
-                                                                            className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormMessage />
-                                                                </FormItem>
-                                                            )}
-                                                        />
-
-                                                        <FormField
-                                                            control={form.control}
-                                                            name="ayah_end"
-                                                            render={({ field }) => (
-                                                                <FormItem className="space-y-3">
-                                                                    <FormLabel className="text-sm font-bold tracking-wide uppercase text-center w-full block text-muted-foreground/80">{t('endAyah')}</FormLabel>
-                                                                    <FormControl>
-                                                                        <Input
-                                                                            type="number"
-                                                                            min="1"
-                                                                            max={maxAyahs}
-                                                                            {...field}
-                                                                            className="text-center font-bold text-xl h-14 bg-background/50 border-none focus:ring-primary/40 shadow-sm"
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormMessage />
-                                                                </FormItem>
-                                                            )}
-                                                        />
-                                                    </>
-                                                );
-                                            })()}
-                                        </div>
-
-                                        {/* Background Selector & Resolution Row */}
-                                        <div className="space-y-6">
-                                            <FormField
-                                                control={form.control}
-                                                name="background_url"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('selectBackground')}</FormLabel>
-                                                        <FormControl>
-                                                            <BackgroundSelector
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                platform={form.watch('platform')}
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-
-                                            <div className="grid sm:grid-cols-2 gap-6">
-                                                <FormField
-                                                    control={form.control}
-                                                    name="reciter_id"
-                                                    render={({ field }) => (
-                                                        <FormItem className="space-y-3">
-                                                            <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80 flex items-center gap-2">
-                                                                <AudioLines className="w-4 h-4 text-primary" strokeWidth={2} /> {t('reciter')}
-                                                            </FormLabel>
-                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                                <FormControl>
-                                                                    <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
-                                                                        <SelectValue placeholder={t('selectReciter')} />
-                                                                    </SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent className="rounded-2xl border-border/10 shadow-2xl max-h-[300px]">
-                                                                    {RECITERS.map((reciter) => (
-                                                                        <SelectItem key={reciter.id} value={reciter.id} className="rounded-xl p-3">
-                                                                            <span className="font-medium">{language === 'ar' && reciter.arabicName ? reciter.arabicName : reciter.name}</span>
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
+                    {/* Grand Unified Studio Card: Contains Form AND Live Preview */}
+                    <Card className="w-full border-none bg-card/50 backdrop-blur-xl shadow-premium animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-100 rounded-[2.5rem] overflow-hidden">
+                        <CardContent className="p-6 md:p-8 lg:p-10">
+                            <div className="flex flex-col lg:grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 items-start w-full">
+                                {/* Form Controls Column */}
+                                <div className="w-full space-y-8">
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                            {/* 1. Fast Verse Discovery / Reference Search */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <BookOpen className="w-4 h-4 text-primary" />
+                                                    <h3 className="text-xs font-bold tracking-wider uppercase text-muted-foreground/80">
+                                                        {t('searchVerses')}
+                                                    </h3>
+                                                </div>
+                                                <VerseSearch
+                                                    currentSurah={watchedSurah}
+                                                    onSelectRange={({ surah, startAyah, endAyah }) => {
+                                                        form.setValue("surah", String(surah));
+                                                        form.setValue("ayah_start", startAyah);
+                                                        form.setValue("ayah_end", endAyah);
+                                                    }}
                                                 />
+                                            </div>
 
-                                                <FormField
-                                                    control={form.control}
-                                                    name="resolution"
-                                                    render={({ field }) => (
-                                                        <FormItem className="space-y-3">
-                                                            <FormLabel className="text-sm font-bold tracking-wide uppercase text-muted-foreground/80">{t('resolution')}</FormLabel>
-                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                                <FormControl>
-                                                                    <SelectTrigger className="h-12 rounded-2xl bg-muted/30 border-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/20">
-                                                                        <SelectValue placeholder={t('selectResolution')} />
-                                                                    </SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent className="rounded-2xl border-border/10 shadow-2xl">
-                                                                    <SelectItem value="360" className="rounded-xl">{t('res360')}</SelectItem>
-                                                                    <SelectItem value="480" className="rounded-xl">{t('res480')}</SelectItem>
-                                                                    <SelectItem value="720" className="rounded-xl">{t('res720')}</SelectItem>
-                                                                    <SelectItem value="1080" className="rounded-xl">{t('res1080')}</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                            {/* 2. Surah & Ayah Range Selector with Live Scripture Preview */}
+                                            <VerseRangeReview
+                                                surah={watchedSurah}
+                                                ayahStart={watchedStart}
+                                                ayahEnd={watchedEnd}
+                                                onChangeSurah={(val) => form.setValue("surah", String(val))}
+                                                onChangeStart={(val) => form.setValue("ayah_start", val)}
+                                                onChangeEnd={(val) => form.setValue("ayah_end", val)}
+                                            />
+
+                                            {/* 3. Render Options: Platform, Text Mode, Reciter, Resolution, Background */}
+                                            <RenderOptions
+                                                platform={watchedPlatform}
+                                                onChangePlatform={(val) => form.setValue("platform", val)}
+                                                textMode={watchedTextMode}
+                                                onChangeTextMode={(val) => form.setValue("text_mode", val)}
+                                                reciterId={watchedReciter}
+                                                onChangeReciter={(val) => form.setValue("reciter_id", val)}
+                                                resolution={watchedResolution}
+                                                onChangeResolution={(val) => form.setValue("resolution", val)}
+                                                backgroundUrl={watchedBackground}
+                                                onChangeBackground={(val) => form.setValue("background_url", val)}
+                                            />
+
+                                            </form>
+                                        </Form>
+                                    </div>
+
+                                    {/* Live Preview Column & Generate Action (Preview appears BEFORE the generate button) */}
+                                    <div className="w-full lg:sticky lg:top-28 space-y-6">
+                                        <div className="flex items-center justify-between gap-3 px-1">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                                    <Video className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-xs font-bold tracking-wider uppercase text-foreground whitespace-nowrap">
+                                                        {t('livePreviewTitle')}
+                                                    </h3>
+                                                    <p className="text-[10px] text-muted-foreground/75 truncate max-w-[200px] sm:max-w-xs">
+                                                        {t('livePreviewDesc')}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold tracking-wider shrink-0 select-none">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                                <span className="whitespace-nowrap">{language === 'ar' ? 'مباشر' : 'LIVE'}</span>
                                             </div>
                                         </div>
 
-                                        <Button
-                                            type="submit"
-                                            className="w-full h-16 text-lg font-bold rounded-2xl shadow-2xl transition-all duration-500 hover:scale-[1.02] border-none group"
-                                            disabled={loading}
-                                        >
-                                            {loading ? (
-                                                <div className="flex items-center gap-3">
-                                                    <Loader2 className="h-6 w-6 animate-spin" />
-                                                    <span className="animate-pulse">{t('generating')}</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-3">
-                                                    <span>{t('generateBtn')}</span>
-                                                </div>
-                                            )}
-                                        </Button>
-                                    </form>
-                                </Form>
-                            </CardContent>
-                        </Card>
-
-                        {/* Result / Preview Section */}
-                        <div className="w-full flex flex-col gap-8 animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
-                            <Card className="h-full min-h-[500px] border-none bg-card/50 backdrop-blur-xl shadow-premium flex flex-col items-center justify-center relative overflow-hidden group rounded-[2.5rem]">
-                                {/* Placeholder Pattern */}
-                                {!videoUrl && !loading && (
-                                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                                )}
-
-                                {loading ? (
-                                    <div className="flex flex-col items-center gap-6 z-10 text-muted-foreground w-3/4 max-w-sm">
-                                        <div className="flex justify-center items-center mb-4 min-h-[100px]">
-                                            <Audio
-                                                height="80"
-                                                width="80"
-                                                color="hsl(var(--primary))"
-                                                ariaLabel="audio-loading"
-                                                visible={true}
+                                        <div className="p-4 md:p-6 pb-6 md:pb-8 rounded-[2rem] bg-muted/20 border border-border/10 shadow-inner flex flex-col items-center justify-center">
+                                            <PreviewPlayer
+                                                plan={plan}
+                                                backgroundUrl={watchedBackground}
+                                                platform={watchedPlatform}
+                                                resolution={parseInt(watchedResolution, 10)}
+                                                loadingPlan={loadingPlan}
+                                                onRefreshPlan={fetchCurrentPlan}
                                             />
                                         </div>
-                                        <div className="w-full space-y-4 text-center">
-                                            <div className="space-y-2">
-                                                <p className="text-xl text-foreground font-medium animate-pulse">
-                                                    {statusMessage === 'status_queued' && queuePosition
-                                                        ? t('status_queued_position').replace('{{position}}', queuePosition)
-                                                        : statusMessage ? t(statusMessage) : t('status_processing_video')}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground tracking-wide uppercase font-bold">{progress}%</p>
-                                            </div>
-                                            <Progress value={progress} className="w-full h-1.5 bg-primary/10" />
-                                            
-                                            {showCancel && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="mt-4 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full"
-                                                    onClick={() => setShowActiveJobDialog(true)}
-                                                >
-                                                    <XCircle className="mr-2 h-4 w-4" />
-                                                    {t('cancelGeneration')}
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : videoUrl ? (
-                                    <div className="w-full h-full p-6 flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-700">
-                                        <div className={cn(
-                                            "relative w-full rounded-3xl overflow-hidden shadow-2xl border border-border/10 group-hover:border-primary/20 transition-all duration-500 bg-black",
-                                            selectedPlatform === 'youtube' ? 'aspect-video max-w-2xl' : 'aspect-[9/16] max-h-[700px]'
-                                        )}>
-                                            <video
-                                                src={videoUrl}
-                                                controls
-                                                className="w-full h-full object-contain"
-                                            />
-                                        </div>
-                                        <div className="flex gap-4 w-full">
-                                            <Button
-                                                variant="outline"
-                                                className="flex-1 h-14 rounded-full border-primary/20 hover:bg-primary/5 text-primary font-bold"
-                                                onClick={() => {
-                                                    const values = form.getValues();
-                                                    const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
-                                                    const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
-                                                    const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
-                                                    const a = document.createElement("a");
-                                                    a.href = videoUrl;
-                                                    a.download = fileName;
-                                                    document.body.appendChild(a);
-                                                    a.click();
-                                                    document.body.removeChild(a);
-                                                }}
-                                            >
-                                                <Download className="mr-2 h-5 w-5" />
-                                                {t('downloadBtn')}
-                                            </Button>
-                                            <Button
-                                                className="flex-1 h-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg shadow-primary/20"
-                                                onClick={async () => {
-                                                    try {
-                                                        const values = form.getValues();
-                                                        const surahData = SURAHS.find(s => s.number === parseInt(values.surah));
-                                                        const surahName = surahData ? surahData.name.replace(/[^a-zA-Z0-9-]/g, '') : values.surah;
-                                                        const fileName = `${surahName}_Ayah${values.ayah_start}-${values.ayah_end}_${values.resolution}p_${values.platform}.mp4`;
 
-                                                        const response = await fetch(videoUrl);
-                                                        const blob = await response.blob();
-                                                        const file = new File([blob], fileName, { type: 'video/mp4' });
+                                        {/* Preflight Summary & Generate Action Button (Placed directly after preview) */}
+                                        <PreflightSummary
+                                            plan={plan}
+                                            timedPlan={timedPlan}
+                                            loadingPlan={loadingPlan}
+                                            loadingPreflight={loadingPreflight}
+                                            loading={loading}
+                                            onGenerate={form.handleSubmit(onSubmit)}
+                                        />
+                                    </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                                            await navigator.share({
-                                                                title: `Quran - ${surahData ? surahData.name : 'Video'} (${values.ayah_start}-${values.ayah_end})`,
-                                                                files: [file],
-                                                            });
-                                                        } else if (navigator.share) {
-                                                            await navigator.share({
-                                                                title: `Quran - ${surahData ? surahData.name : 'Video'}`,
-                                                                text: 'Check out this video generated with Quran Video Generator!',
-                                                                url: window.location.href
-                                                            });
-                                                        } else {
-                                                            toast.error(t('shareNotSupported'));
-                                                        }
-                                                    } catch (err) {
-                                                        if (err.name !== 'AbortError') {
-                                                            console.error("Sharing failed:", err);
-                                                            toast.error(t('shareNotSupported'));
-                                                        }
-                                                    }
-                                                }}
-                                            >
-                                                <Share2 className="mr-2 h-5 w-5" />
-                                                {t('shareBtn')}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-6 z-10 text-muted-foreground p-8">
-                                        <div className="w-24 h-24 rounded-[2.5rem] bg-muted/30 flex items-center justify-center mb-4 transition-all duration-700 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
-                                            <Video className="w-10 h-10 text-primary/40 group-hover:text-primary transition-colors duration-500" strokeWidth={1.5} />
-                                        </div>
-                                        <div className="text-center space-y-3">
-                                            <h3 className="text-2xl font-bold text-foreground">{t('previewTitle')}</h3>
-                                            <p className="text-muted-foreground leading-relaxed max-w-[280px]">{t('previewText')}</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </Card>
+                    {/* Generation Result Section (Placed UNDER the form card, ONLY appears when loading or videoUrl exists) */}
+                    {(loading || videoUrl) && (
+                        <div ref={resultRef} className="w-full max-w-4xl mx-auto scroll-mt-24">
+                            <GenerationResult
+                                loading={loading}
+                                videoUrl={videoUrl}
+                                progress={progress}
+                                queuePosition={queuePosition}
+                                statusMessage={statusMessage}
+                                showCancel={showCancel}
+                                onCancel={() => setShowActiveJobDialog(true)}
+                                onDismiss={() => setVideoUrl(null)}
+                                platform={watchedPlatform}
+                                formValues={form.getValues()}
+                            />
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 

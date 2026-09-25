@@ -53,7 +53,7 @@ const LandingPage = ({ onAuthRequired }) => {
                 <div className="absolute inset-0 bg-[radial-gradient(#80808012_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
 
                 {/* Noise static overlay */}
-                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none bg-[url('/noise.svg')]"></div>
             </div>
 
             {/* Content Container */}

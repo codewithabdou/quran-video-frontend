@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Loader2, AlertCircle } from "lucide-react";
+import { Check, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
 
 // Swiper imports
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/navigation';
 
 const BackgroundSelector = ({ value, onChange, className, platform }) => {
     const { t, dir, language } = useThemeLanguage();
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const hasFetched = React.useRef(false);
+    const [swiperInstance, setSwiperInstance] = useState(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const hasFetched = useRef(false);
 
     useEffect(() => {
         const fetchVideos = async () => {
@@ -95,18 +95,33 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
         );
     }
 
+    const initialSlideIndex = (!value || !videos || videos.length === 0)
+        ? 0
+        : Math.max(0, videos.findIndex(v => getBestVideoLink(v) === value));
+
     return (
         <div className={cn("w-full", className)}>
-            <div className="relative w-full">
+            <div className={cn("relative w-full py-2", platform !== 'youtube' ? "max-w-[280px] mx-auto" : "max-w-xl mx-auto")}>
                 <Swiper
                     key={`${language}-${dir}`}
-                    modules={[Navigation]}
-                    navigation
+                    initialSlide={initialSlideIndex}
+                    onSwiper={(swiper) => {
+                        setSwiperInstance(swiper);
+                        setCurrentIndex(swiper.realIndex ?? swiper.activeIndex ?? 0);
+                    }}
+                    onSlideChange={(swiper) => {
+                        const idx = swiper.realIndex ?? swiper.activeIndex;
+                        setCurrentIndex(idx);
+                        if (videos && videos[idx]) {
+                            const videoLink = getBestVideoLink(videos[idx]);
+                            onChange(videoLink);
+                        }
+                    }}
                     dir={dir}
                     rtl={(dir === 'rtl').toString()}
                     spaceBetween={20}
                     slidesPerView={1}
-                    className={cn("w-full py-2", platform !== 'youtube' && "max-w-[280px] mx-auto")}
+                    className="w-full rounded-[2.5rem] overflow-hidden"
                 >
                     {videos.map((video) => {
                         const videoLink = getBestVideoLink(video);
@@ -114,7 +129,7 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
 
                         return (
                             <SwiperSlide key={video.id}>
-                                <div className="p-2">
+                                <div className="p-1">
                                     <div
                                         className={cn(
                                             "cursor-pointer group relative overflow-hidden rounded-[2.5rem] transition-all duration-500",
@@ -131,21 +146,20 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                                                 alt={video.user.name}
                                                 className={cn(
                                                     "w-full h-full object-cover transition-transform duration-700",
-                                                    isSelected ? "scale-110" : "group-hover:scale-105"
+                                                    isSelected ? "scale-105" : "group-hover:scale-105"
                                                 )}
                                                 loading="lazy"
                                                 decoding="async"
                                             />
 
                                             {/* Gradient Overlays */}
-                                            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/20 opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                                            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-black/30 opacity-70 group-hover:opacity-50 transition-opacity duration-500" />
                                             
                                             {/* Selection Visuals */}
                                             {isSelected && (
-                                                <div className="absolute inset-0 bg-primary/10 transition-all duration-500 flex items-center justify-center">
-                                                    <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-2xl animate-in zoom-in slide-in-from-bottom-2 duration-500">
-                                                        <Check className="w-8 h-8" strokeWidth={3} />
-                                                    </div>
+                                                <div className="absolute top-4 end-4 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-xl flex items-center gap-1.5 select-none animate-in fade-in duration-300 z-10">
+                                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                                    <span>{language === 'ar' ? 'محدد' : 'Selected'}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -155,6 +169,42 @@ const BackgroundSelector = ({ value, onChange, className, platform }) => {
                         );
                     })}
                 </Swiper>
+
+                {/* Custom High-Contrast Glassmorphic Navigation Buttons */}
+                {videos.length > 1 && (
+                    <>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                swiperInstance?.slidePrev();
+                            }}
+                            className="absolute start-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                            title={language === 'ar' ? 'الخلفية السابقة' : 'Previous Background'}
+                        >
+                            <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                swiperInstance?.slideNext();
+                            }}
+                            className="absolute end-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                            title={language === 'ar' ? 'الخلفية التالية' : 'Next Background'}
+                        >
+                            <ChevronRight className="w-5 h-5 rtl:rotate-180" />
+                        </button>
+
+                        {/* Bottom Slide Counter Pill */}
+                        <div className="absolute bottom-5 inset-x-0 flex justify-center z-20 pointer-events-none">
+                            <div className="px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-white text-xs font-mono font-bold shadow-lg select-none">
+                                {currentIndex + 1} / {videos.length}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

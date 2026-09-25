@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { ThemeLanguageProvider, useThemeLanguage } from "./contexts/ThemeLanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Navbar from "./components/Navbar";
+import MobileBottomNav from "./components/MobileBottomNav";
 import AuthModal from "./components/AuthModal";
 import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -9,6 +10,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { translations } from "./lib/translations";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ScrollToTop from "./components/ScrollToTop";
+import PwaInstallPrompt from "./components/PwaInstallPrompt";
 
 // Lazy load route components for better performance
 const LandingPage = lazy(() => import("./components/LandingPage"));
@@ -42,9 +45,10 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans antialiased text-foreground transition-colors duration-300">
+      <ScrollToTop />
       <Navbar onAuthRequired={login} />
       
-      <main className="flex-1">
+      <main className="flex-1 pb-28 md:pb-0">
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<LandingPage onAuthRequired={login} />} />
@@ -82,6 +86,8 @@ function AppContent() {
       </main>
       
       <Footer />
+      <MobileBottomNav onAuthRequired={login} />
+      <PwaInstallPrompt />
       <Toaster />
     </div>
   );

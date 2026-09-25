@@ -13,12 +13,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 
+import AuthCallback from "./components/AuthCallback";
+
 // Lazy load route components for better performance
 const LandingPage = lazy(() => import("./components/LandingPage"));
 const ExperimentalVideoGenerator = lazy(() => import("./components/ExperimentalVideoGenerator"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 const HistoryPage = lazy(() => import("./components/HistoryPage"));
-const AuthCallback = lazy(() => import("./components/AuthCallback"));
 const QuranRadio = lazy(() => import("./components/QuranRadio"));
 const MushafReader = lazy(() => import("./components/MushafReader"));
 const PrayerTimes = lazy(() => import("./components/PrayerTimes"));

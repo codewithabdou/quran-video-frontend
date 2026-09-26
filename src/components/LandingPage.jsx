@@ -41,7 +41,7 @@ const LandingPage = ({ onAuthRequired }) => {
     };
 
     return (
-        <div className="relative min-h-[calc(100vh-80px)] w-full overflow-hidden flex flex-col items-center justify-center bg-background selection:bg-primary/20 pb-20" dir={dir}>
+        <div className="relative min-h-[calc(100vh-64px)] md:min-h-[calc(100vh-80px)] w-full overflow-hidden flex flex-col items-center justify-center bg-background selection:bg-primary/20 py-8 md:py-6" dir={dir}>
 
             {/* Premium Background: Mesh Gradient + Noise */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -57,55 +57,55 @@ const LandingPage = ({ onAuthRequired }) => {
             </div>
 
             {/* Content Container */}
-            <div className="relative z-10 container mx-auto px-6 py-8 md:py-12 flex flex-col items-center justify-center text-center max-w-7xl min-h-[70vh]">
+            <div className="relative z-10 container mx-auto px-4 sm:px-6 flex flex-col items-center justify-center text-center max-w-5xl">
                 {/* Main Title - CSS handles serif/arabic context */}
-                <h1 className="text-4xl md:text-8xl font-bold tracking-tight text-foreground leading-normal mb-8">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-tight md:leading-[1.15] mb-4 md:mb-5 max-w-4xl">
                     {t('welcomeTitle')}
                 </h1>
 
                 {/* Description */}
-                <p className="text-lg md:text-2xl text-muted-foreground max-w-2xl font-medium leading-relaxed mb-10">
+                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl font-medium leading-relaxed mb-6 md:mb-8">
                     {t('welcomeDesc')}
                 </p>
 
                 {/* CTA Button */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-16">
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-8 md:mb-10">
                     <Button 
                         size="lg" 
-                        className="h-16 px-10 rounded-full text-lg font-bold shadow-premium hover-glow bg-primary text-primary-foreground border-none"
-                        onClick={onAuthRequired}
+                        className="h-13 sm:h-14 px-8 sm:px-10 rounded-full text-base sm:text-lg font-bold shadow-premium hover-glow bg-primary text-primary-foreground border-none transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                        onClick={handleStartGenerating}
                     >
                         {t('startNowBtn')}
                     </Button>
                 </div>
 
                 {/* Stats Section */}
-                <div className="grid grid-cols-2 gap-4 md:gap-8 max-w-3xl w-full">
-                    <div className="group relative p-6 md:p-8 rounded-4xl bg-card/30 backdrop-blur-md border border-border/10 shadow-premium hover:bg-card/40 transition-all duration-500 overflow-hidden text-center">
+                <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-xl md:max-w-2xl w-full">
+                    <div className="group relative p-4 sm:p-5 md:py-6 md:px-8 rounded-3xl md:rounded-4xl bg-card/30 backdrop-blur-md border border-border/10 shadow-premium hover:bg-card/40 transition-all duration-500 overflow-hidden text-center">
                         <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="p-3 rounded-2xl bg-primary/10 text-primary mb-2">
-                                <Video className="w-6 h-6" />
+                        <div className="flex flex-col items-center gap-2 md:gap-2.5">
+                            <div className="p-2.5 md:p-3 rounded-xl md:rounded-2xl bg-primary/10 text-primary mb-1">
+                                <Video className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
-                            <span className="text-3xl md:text-5xl font-black tracking-tighter text-foreground italic">
+                            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-black tracking-tighter text-foreground italic">
                                 {stats.totalGenerations.toLocaleString()}+
                             </span>
-                            <span className="text-xs md:text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+                            <span className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-wider md:tracking-widest text-muted-foreground/70">
                                 {t('totalGenerationsStat')}
                             </span>
                         </div>
                     </div>
 
-                    <div className="group relative p-6 md:p-8 rounded-4xl bg-card/30 backdrop-blur-md border border-border/10 shadow-premium hover:bg-card/40 transition-all duration-500 overflow-hidden text-center">
+                    <div className="group relative p-4 sm:p-5 md:py-6 md:px-8 rounded-3xl md:rounded-4xl bg-card/30 backdrop-blur-md border border-border/10 shadow-premium hover:bg-card/40 transition-all duration-500 overflow-hidden text-center">
                         <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="p-3 rounded-2xl bg-primary/10 text-primary mb-2">
-                                <Users className="w-6 h-6" />
+                        <div className="flex flex-col items-center gap-2 md:gap-2.5">
+                            <div className="p-2.5 md:p-3 rounded-xl md:rounded-2xl bg-primary/10 text-primary mb-1">
+                                <Users className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
-                            <span className="text-3xl md:text-5xl font-black tracking-tighter text-foreground italic">
+                            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-black tracking-tighter text-foreground italic">
                                 {stats.activeUsers.toLocaleString()}+
                             </span>
-                            <span className="text-xs md:text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+                            <span className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-wider md:tracking-widest text-muted-foreground/70">
                                 {t('activeUsersStat')}
                             </span>
                         </div>
@@ -114,8 +114,8 @@ const LandingPage = ({ onAuthRequired }) => {
             </div>
 
             {/* Custom Cursor / Ambient Flow element (Hidden on mobile) */}
-            <div className="hidden lg:block absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce opacity-20">
-                <div className="w-px h-12 bg-linear-to-b from-primary to-transparent"></div>
+            <div className="hidden xl:block absolute bottom-3 left-1/2 -translate-x-1/2 animate-bounce opacity-20 pointer-events-none">
+                <div className="w-px h-6 bg-linear-to-b from-primary to-transparent"></div>
             </div>
         </div>
     );

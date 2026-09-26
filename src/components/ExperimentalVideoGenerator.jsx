@@ -316,7 +316,13 @@ const ExperimentalVideoGenerator = () => {
         const textMode = form.getValues("text_mode") || "bilingual";
         const reciterId = form.getValues("reciter_id");
 
-        if (!surah || !start || !end || isNaN(start) || isNaN(end) || start > end) {
+        const surahNum = parseInt(surah, 10);
+        const surahData = SURAHS.find(s => s.number === surahNum);
+        const maxAyahs = surahData ? surahData.ayahs : 7;
+
+        if (!surah || !start || !end || isNaN(start) || isNaN(end) || start > end || start > maxAyahs || end > maxAyahs) {
+            setLoadingPlan(false);
+            setLoadingPreflight(false);
             return;
         }
 
@@ -362,6 +368,7 @@ const ExperimentalVideoGenerator = () => {
     }, [form]);
 
     useEffect(() => {
+        setLoadingPlan(true);
         const timer = setTimeout(() => {
             fetchCurrentPlan();
         }, 280);
@@ -370,6 +377,15 @@ const ExperimentalVideoGenerator = () => {
     }, [watchedSurah, watchedStart, watchedEnd, watchedPlatform, watchedResolution, watchedReciter, watchedTextMode, fetchCurrentPlan]);
 
     const startGeneration = async (data) => {
+        // Clean up previous generation video URL to free memory
+        if (videoUrl && videoUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(videoUrl);
+        }
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
+
         setLoading(true);
         setVideoUrl(null);
         setProgress(0);
@@ -448,6 +464,28 @@ const ExperimentalVideoGenerator = () => {
             setStatusMessage("status_queued");
             console.log("[Frontend] Enqueuing job", requestId, "...");
 
+            // Ensure planHash matches current form values, not stale values from previous video
+            const currentSurah = parseInt(data.surah, 10);
+            const currentStart = parseInt(data.ayah_start, 10);
+            const currentEnd = parseInt(data.ayah_end, 10);
+
+            let activePlanHash = null;
+            let activeTimingOverrides = null;
+
+            const timedPlanObj = timedPlan?.screens ? timedPlan : (timedPlan?.timedPlan || null);
+            if (timedPlanObj &&
+                timedPlanObj.selection?.surah === currentSurah &&
+                timedPlanObj.selection?.startAyah === currentStart &&
+                timedPlanObj.selection?.endAyah === currentEnd) {
+                activePlanHash = timedPlanObj.planHash;
+                activeTimingOverrides = timedPlanObj.timingOverrides || timedPlan?.timingOverrides;
+            } else if (plan &&
+                       plan.selection?.surah === currentSurah &&
+                       plan.selection?.startAyah === currentStart &&
+                       plan.selection?.endAyah === currentEnd) {
+                activePlanHash = plan.planHash;
+            }
+
             // 1. Queue the video generation job (reverted to axios withCredentials)
             const queueResponse = await axios.post(`${NODE_API_URL}/api/v1/generate-video`, {
                 ...data,
@@ -458,8 +496,8 @@ const ExperimentalVideoGenerator = () => {
                 reciter_id: data.reciter_id,
                 translation_id: "en.sahih",
                 text_mode: data.text_mode || 'bilingual',
-                plan_hash: timedPlan?.planHash || timedPlan?.timedPlan?.planHash || plan?.planHash,
-                timing_overrides: timedPlan?.timingOverrides || timedPlan?.timedPlan?.timingOverrides,
+                plan_hash: activePlanHash,
+                timing_overrides: activeTimingOverrides,
                 request_id: requestId,
                 background_url: finalBackgroundUrl,
                 platform: data.platform,

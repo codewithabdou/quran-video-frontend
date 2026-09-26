@@ -74,15 +74,15 @@ const VerseRangeReview = ({
         const nextSurahObj = SURAHS.find(s => s.number === nextSurahNum);
         const nextMax = nextSurahObj ? nextSurahObj.ayahs : 7;
 
-        onChangeSurah(val);
-
-        // Adjust ayah ranges if outside bounds of the new surah
+        // Adjust ayah ranges if outside bounds of the new surah before setting surah
         if (start > nextMax) {
             onChangeStart(1);
             onChangeEnd(Math.min(3, nextMax));
         } else if (end > nextMax) {
             onChangeEnd(nextMax);
         }
+
+        onChangeSurah(val);
     };
 
     const handleStepStart = (delta) => {

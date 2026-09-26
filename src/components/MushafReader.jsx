@@ -7,11 +7,9 @@ import {
     ChevronRight,
     Search,
     Book,
-    Bookmark,
     Loader2,
     Settings2,
     Type,
-    Maximize2,
     ChevronDown,
     Plus,
     Minus,
@@ -48,9 +46,6 @@ const MushafReader = () => {
     const [currentPage, setCurrentPage] = useState(() => {
         return parseInt(localStorage.getItem('mushaf_last_page')) || 1;
     });
-    const [isBookmarked, setIsBookmarked] = useState(() => {
-        return parseInt(localStorage.getItem('mushaf_bookmark')) === currentPage;
-    });
     const [fontSize, setFontSize] = useState(() => {
         return parseInt(localStorage.getItem('mushaf_font_size')) || (window.innerWidth < 768 ? 24 : 32);
     });
@@ -66,32 +61,7 @@ const MushafReader = () => {
     const [surahSearch, setSurahSearch] = useState('');
     const [isSurahModalOpen, setIsSurahModalOpen] = useState(false);
     const [currentSurah, setCurrentSurah] = useState({ name: '...', ar: '...' });
-
     const containerRef = useRef(null);
-
-    useEffect(() => {
-        setIsBookmarked(parseInt(localStorage.getItem('mushaf_bookmark')) === currentPage);
-    }, [currentPage]);
-
-    const toggleBookmark = () => {
-        if (isBookmarked) {
-            localStorage.removeItem('mushaf_bookmark');
-            setIsBookmarked(false);
-        } else {
-            localStorage.setItem('mushaf_bookmark', currentPage.toString());
-            setIsBookmarked(true);
-        }
-    };
-
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            containerRef.current.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-        } else {
-            document.exitFullscreen();
-        }
-    };
 
     useEffect(() => {
         const fetchSurahs = async () => {
@@ -375,30 +345,6 @@ const MushafReader = () => {
                         </Button>
                     </div>
                 </Card>
-            </div>
-
-            {/* Quick Actions Bar */}
-            <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black dark:bg-white p-2 rounded-full shadow-2xl backdrop-blur-xl z-50">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleBookmark}
-                    className={`h-12 w-12 rounded-full transition-all ${isBookmarked
-                            ? 'bg-white text-black dark:bg-black dark:text-white'
-                            : 'text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/5'
-                        }`}
-                >
-                    <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
-                </Button>
-                <div className="w-px h-6 bg-white/20 dark:bg-black/10" />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-12 w-12 rounded-full text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/5 transition-all"
-                    onClick={toggleFullscreen}
-                >
-                    <Maximize2 className="h-5 w-5" />
-                </Button>
             </div>
         </div>
     );

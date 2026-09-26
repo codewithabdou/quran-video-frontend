@@ -66,24 +66,37 @@ const MobileBottomNav = ({ onAuthRequired }) => {
                         end
                         className={({ isActive }) =>
                             cn(
-                                "flex flex-col items-center justify-center w-full h-full py-0.5 gap-0.5 transition-all duration-200 select-none",
+                                "flex flex-col items-center justify-center w-full h-full py-0.5 transition-all duration-200 select-none group",
                                 isActive
-                                    ? "text-primary font-bold scale-105"
-                                    : "text-muted-foreground hover:text-foreground"
+                                    ? "text-primary font-bold"
+                                    : "text-muted-foreground hover:text-foreground font-medium"
                             )
                         }
                     >
                         {({ isActive }) => (
                             <>
-                                <div className="relative">
-                                    <Home className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.5 : 1.75} />
-                                    {isActive && (
-                                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                                    )}
+                                <div className={cn(
+                                    "flex items-center justify-center transition-transform duration-200",
+                                    isActive ? "scale-110" : "group-hover:scale-105"
+                                )}>
+                                    <Home className="w-5 h-5" strokeWidth={isActive ? 2.4 : 1.75} />
                                 </div>
-                                <span className="text-xs font-semibold tracking-tight truncate max-w-[64px]">
+                                <span className={cn(
+                                    "text-[11px] leading-tight tracking-tight truncate max-w-[64px] transition-colors duration-200 mt-0.5",
+                                    isActive ? "font-bold text-primary" : "font-medium"
+                                )}>
                                     {t('navHome')}
                                 </span>
+                                <div className="h-1 flex items-center justify-center mt-0.5">
+                                    <span
+                                        className={cn(
+                                            "h-1 rounded-full bg-primary transition-all duration-300 ease-out",
+                                            isActive
+                                                ? "w-2.5 opacity-100 shadow-xs shadow-primary/40"
+                                                : "w-0 opacity-0"
+                                        )}
+                                    />
+                                </div>
                             </>
                         )}
                     </NavLink>
@@ -93,24 +106,37 @@ const MobileBottomNav = ({ onAuthRequired }) => {
                         to="/mushaf"
                         className={({ isActive }) =>
                             cn(
-                                "flex flex-col items-center justify-center w-full h-full py-0.5 gap-0.5 transition-all duration-200 select-none",
+                                "flex flex-col items-center justify-center w-full h-full py-0.5 transition-all duration-200 select-none group",
                                 isActive
-                                    ? "text-primary font-bold scale-105"
-                                    : "text-muted-foreground hover:text-foreground"
+                                    ? "text-primary font-bold"
+                                    : "text-muted-foreground hover:text-foreground font-medium"
                             )
                         }
                     >
                         {({ isActive }) => (
                             <>
-                                <div className="relative">
-                                    <BookOpen className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.5 : 1.75} />
-                                    {isActive && (
-                                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                                    )}
+                                <div className={cn(
+                                    "flex items-center justify-center transition-transform duration-200",
+                                    isActive ? "scale-110" : "group-hover:scale-105"
+                                )}>
+                                    <BookOpen className="w-5 h-5" strokeWidth={isActive ? 2.4 : 1.75} />
                                 </div>
-                                <span className="text-xs font-semibold tracking-tight truncate max-w-[64px]">
+                                <span className={cn(
+                                    "text-[11px] leading-tight tracking-tight truncate max-w-[64px] transition-colors duration-200 mt-0.5",
+                                    isActive ? "font-bold text-primary" : "font-medium"
+                                )}>
                                     {t('navMushaf')}
                                 </span>
+                                <div className="h-1 flex items-center justify-center mt-0.5">
+                                    <span
+                                        className={cn(
+                                            "h-1 rounded-full bg-primary transition-all duration-300 ease-out",
+                                            isActive
+                                                ? "w-2.5 opacity-100 shadow-xs shadow-primary/40"
+                                                : "w-0 opacity-0"
+                                        )}
+                                    />
+                                </div>
                             </>
                         )}
                     </NavLink>
@@ -154,24 +180,37 @@ const MobileBottomNav = ({ onAuthRequired }) => {
                         to="/prayer-times"
                         className={({ isActive }) =>
                             cn(
-                                "flex flex-col items-center justify-center w-full h-full py-0.5 gap-0.5 transition-all duration-200 select-none",
+                                "flex flex-col items-center justify-center w-full h-full py-0.5 transition-all duration-200 select-none group",
                                 isActive
-                                    ? "text-primary font-bold scale-105"
-                                    : "text-muted-foreground hover:text-foreground"
+                                    ? "text-primary font-bold"
+                                    : "text-muted-foreground hover:text-foreground font-medium"
                             )
                         }
                     >
                         {({ isActive }) => (
                             <>
-                                <div className="relative">
-                                    <Clock className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.5 : 1.75} />
-                                    {isActive && (
-                                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                                    )}
+                                <div className={cn(
+                                    "flex items-center justify-center transition-transform duration-200",
+                                    isActive ? "scale-110" : "group-hover:scale-105"
+                                )}>
+                                    <Clock className="w-5 h-5" strokeWidth={isActive ? 2.4 : 1.75} />
                                 </div>
-                                <span className="text-xs font-semibold tracking-tight truncate max-w-[64px]">
+                                <span className={cn(
+                                    "text-[11px] leading-tight tracking-tight truncate max-w-[64px] transition-colors duration-200 mt-0.5",
+                                    isActive ? "font-bold text-primary" : "font-medium"
+                                )}>
                                     {t('navPrayers')}
                                 </span>
+                                <div className="h-1 flex items-center justify-center mt-0.5">
+                                    <span
+                                        className={cn(
+                                            "h-1 rounded-full bg-primary transition-all duration-300 ease-out",
+                                            isActive
+                                                ? "w-2.5 opacity-100 shadow-xs shadow-primary/40"
+                                                : "w-0 opacity-0"
+                                        )}
+                                    />
+                                </div>
                             </>
                         )}
                     </NavLink>
@@ -181,22 +220,38 @@ const MobileBottomNav = ({ onAuthRequired }) => {
                         type="button"
                         onClick={() => setIsDrawerOpen(true)}
                         className={cn(
-                            "flex flex-col items-center justify-center w-full h-full py-0.5 gap-0.5 transition-all duration-200 select-none focus:outline-none",
+                            "flex flex-col items-center justify-center w-full h-full py-0.5 transition-all duration-200 select-none focus:outline-none group",
                             isSecondaryRouteActive || isDrawerOpen
-                                ? "text-primary font-bold scale-105"
-                                : "text-muted-foreground hover:text-foreground"
+                                ? "text-primary font-bold"
+                                : "text-muted-foreground hover:text-foreground font-medium"
                         )}
                         aria-label={t('navMore')}
                     >
-                        <div className="relative">
-                            <Grid className="w-[22px] h-[22px]" strokeWidth={isSecondaryRouteActive || isDrawerOpen ? 2.5 : 1.75} />
+                        <div className={cn(
+                            "relative flex items-center justify-center transition-transform duration-200",
+                            (isSecondaryRouteActive || isDrawerOpen) ? "scale-110" : "group-hover:scale-105"
+                        )}>
+                            <Grid className="w-5 h-5" strokeWidth={isSecondaryRouteActive || isDrawerOpen ? 2.4 : 1.75} />
                             {isSecondaryRouteActive && (
-                                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
+                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary ring-2 ring-background" />
                             )}
                         </div>
-                        <span className="text-xs font-semibold tracking-tight truncate max-w-[64px]">
+                        <span className={cn(
+                            "text-[11px] leading-tight tracking-tight truncate max-w-[64px] transition-colors duration-200 mt-0.5",
+                            (isSecondaryRouteActive || isDrawerOpen) ? "font-bold text-primary" : "font-medium"
+                        )}>
                             {t('navMore')}
                         </span>
+                        <div className="h-1 flex items-center justify-center mt-0.5">
+                            <span
+                                className={cn(
+                                    "h-1 rounded-full bg-primary transition-all duration-300 ease-out",
+                                    isSecondaryRouteActive || isDrawerOpen
+                                        ? "w-2.5 opacity-100 shadow-xs shadow-primary/40"
+                                        : "w-0 opacity-0"
+                                )}
+                            />
+                        </div>
                     </button>
                 </div>
             </nav>
